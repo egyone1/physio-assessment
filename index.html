@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Physio Assessment Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Readex+Pro:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: clinic workbench. Top bar + tabs; dashboard grid; visit = region tabs + SOAP tabs + sticky summary rail */
+:root{
+  --bg:#f2f6f5; --surface:#ffffff; --surface-2:#e9f0ee; --ink:#13222a; --muted:#56676c; --line:#d3dedb;
+  --accent:#0d6a5b; --accent-ink:#ffffff; --accent-soft:#d6ebe5;
+  --warn:#9a5c06; --warn-soft:#fbeed5; --bad:#b0222b; --bad-soft:#f8e0e0; --good:#21763a; --good-soft:#ddf0e1;
+  --s:#2f5f9e; --o:#0d6a5b; --a:#8a4f12; --p:#6b4a9a;
+  --paper:#ffffff; --paper-ink:#15202a; --paper-muted:#56656c; --paper-line:#cdd7da; --paper-accent:#0d6a5b;
+  --f-display:"Readex Pro",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1618; --surface:#162023; --surface-2:#1d2a2e; --ink:#e2ebe9; --muted:#93a5a8; --line:#2a393d;
+  --accent:#53c0a7; --accent-ink:#06201a; --accent-soft:#163a32;
+  --warn:#e8ab4c; --warn-soft:#382912; --bad:#f08a90; --bad-soft:#3b1b1e; --good:#72d18c; --good-soft:#16321e;
+  --s:#86aee6; --o:#53c0a7; --a:#e3a764; --p:#b89ae3; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1618; --surface:#162023; --surface-2:#1d2a2e; --ink:#e2ebe9; --muted:#93a5a8; --line:#2a393d;
+  --accent:#53c0a7; --accent-ink:#06201a; --accent-soft:#163a32;
+  --warn:#e8ab4c; --warn-soft:#382912; --bad:#f08a90; --bad-soft:#3b1b1e; --good:#72d18c; --good-soft:#16321e;
+  --s:#86aee6; --o:#53c0a7; --a:#e3a764; --p:#b89ae3; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{margin:0;font-family:var(--f-body);font-size:15px;line-height:1.55}
+*{box-sizing:border-box}
+#app{max-width:1220px;margin:0 auto;padding-inline:16px;padding-block:0 100px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:12px 0;border-bottom:1px solid var(--line);margin-inline:-16px;padding-inline:16px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px}
+.mark{width:28px;height:28px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:none}
+.mark svg{width:18px;height:18px}
+.status{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--good)}.dot.busy{background:var(--warn)}.dot.err{background:var(--bad)}
+.tabs{display:flex;gap:4px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
+.tab{border:0;background:none;padding:10px 14px;border-bottom:3px solid transparent;color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--ink);border-color:var(--accent)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill-t{border:1px solid var(--line);border-radius:999px;padding:6px 14px;background:var(--surface);cursor:pointer;font-weight:600;color:var(--muted)}
+.pill-t.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-block:20px 14px}
+.page-h h2{font-size:22px}
+.crumb{font-size:13px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.crumb button{border:0;background:none;color:var(--accent);cursor:pointer;padding:0;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
+.dash{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+label.f>span{font-weight:600}
+input[type=text],input[type=number],input[type=date],input[type=search],input[type=tel],input[type=email],select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px;color:var(--ink);min-width:0}
+textarea{resize:vertical;min-height:64px}
+input[type=number]{font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--bad)}
+.btn.danger.arm{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.icon{border:1px solid var(--line);background:var(--surface);border-radius:7px;width:30px;height:30px;display:inline-grid;place-items:center;cursor:pointer;color:var(--muted);flex:none}
+.icon:disabled{opacity:.35}
+.muted{color:var(--muted)}.small{font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.badge.test{background:var(--ink);color:var(--bg);font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em}
+.badge.cond{background:var(--accent-soft);color:var(--accent)}
+.badge.req{background:var(--warn-soft);color:var(--warn)}
+.badge.bad{background:var(--bad-soft);color:var(--bad)}
+.badge.good{background:var(--good-soft);color:var(--good)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:500;min-height:38px}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip.pos.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.chip.neg.on{background:var(--good);border-color:var(--good);color:#fff}
+.chip.eq.on{background:var(--warn);border-color:var(--warn);color:#fff}
+.chip.sm{padding:4px 11px;min-height:30px;font-size:13px}
+.check{display:inline-flex;gap:6px;align-items:center;font-size:14px;cursor:pointer}
+.empty{padding:24px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+.list{display:flex;flex-direction:column;gap:6px}
+.li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.li.open{border-color:var(--accent)}
+.li-h{display:flex;align-items:center;gap:8px;padding:9px 12px;min-width:0}
+.li-h .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.li-h .t b{font-weight:600;overflow-wrap:anywhere}
+.li-h.click{cursor:pointer}
+.li-h.click:hover b{color:var(--accent)}
+.li-b{border-top:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:12px}
+.mv{display:flex;flex-direction:column;gap:2px}
+.mv .icon{width:26px;height:22px;border-radius:5px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.sec-h h3{font-size:15px}
+.alert{border-radius:8px;padding:10px 12px;font-size:14px;display:flex;gap:8px;align-items:flex-start}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert.info{background:var(--accent-soft);color:var(--accent)}
+.fh{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+/* dashboard */
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi div{flex:1;min-width:110px;background:var(--surface-2);border-radius:8px;padding:10px 12px}
+.kpi b{display:block;font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.due{font-size:12px;font-weight:600}
+.due.over{color:var(--bad)}.due.soon{color:var(--warn)}
+/* visit */
+.visit{display:grid;gap:16px}
+@media (min-width:980px){.visit{grid-template-columns:minmax(0,1fr) 320px;align-items:start}.rail{position:sticky;top:110px;max-height:calc(100vh - 130px);overflow:auto}}
+.regions{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.region{flex:none;min-width:150px;max-width:230px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.region b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.region span{font-size:12px;color:var(--muted)}
+.region.on{border-color:var(--accent);background:var(--accent-soft)}
+.region.on b{color:var(--accent)}
+.region.add{border-style:dashed;color:var(--accent);font-weight:600;justify-content:center;min-width:130px}
+.picker{border:1px solid var(--accent);border-radius:var(--r);padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:12px}
+.pgroup{display:flex;flex-direction:column;gap:6px}
+.soap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--surface-2);padding:4px;border-radius:10px}
+.soap button{border:0;background:none;border-radius:7px;padding:8px 4px;cursor:pointer;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:0;line-height:1.2}
+.soap button i{font-style:normal;font-family:var(--f-mono);font-size:12px}
+.soap button small{font-size:11.5px;font-weight:500}
+.soap button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.soap button.on i{color:var(--pc)}
+.q{padding-block:14px;border-bottom:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
+.q:last-child{border-bottom:0;padding-bottom:0}
+.q-h{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.q-l{font-weight:600}
+.q-l .star{color:var(--bad)}
+.q.appear{animation:appear .35s ease}
+@keyframes appear{from{background:var(--accent-soft)}to{background:transparent}}
+.help{font-size:13px;color:var(--muted)}
+.nprs{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:4px;max-width:520px}
+.nprs button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 0;cursor:pointer;font-variant-numeric:tabular-nums;font-weight:600}
+.nprs button.on{color:#fff;border-color:transparent}
+.nprs-l{display:flex;justify-content:space-between;max-width:520px;font-size:11.5px;color:var(--muted)}
+.num{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.num input{max-width:140px}
+.num span{color:var(--muted);font-family:var(--f-mono);font-size:13px}
+.meas-bar{height:5px;width:140px;border-radius:9px;background:var(--surface-2);overflow:hidden}
+.meas-bar i{display:block;height:100%;background:var(--accent)}
+.dx{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.dx.ok{border-color:var(--good);background:var(--good-soft)}
+.dx-n{font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.code{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.why{font-size:12.5px;color:var(--muted)}
+.meter{height:6px;border-radius:9px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.finding{font-size:14px;padding-left:12px;border-left:3px solid var(--a)}
+.later{border:1px dashed var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px}
+.later ul{margin:0;padding-left:18px;columns:2;color:var(--muted);font-size:13.5px}
+.bar{position:fixed;inset-inline:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));z-index:30}
+.bar .in{max-width:1220px;margin:0 auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toast{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:40;font-size:14px;max-width:calc(100% - 32px)}
+/* builder */
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.rule-h{display:flex;gap:8px;align-items:center;padding:10px 12px;background:var(--surface-2)}
+.rule-h input{background:transparent;border-color:transparent;font-weight:600;padding-inline:4px}
+.rule-h input:focus{background:var(--surface);border-color:var(--line)}
+.kw{font-family:var(--f-mono);font-weight:500;font-size:12px;letter-spacing:.08em;padding:3px 9px;border-radius:5px;display:inline-block}
+.kw.if{background:var(--ink);color:var(--bg)}
+.kw.then{background:var(--accent);color:var(--accent-ink)}
+.rule-b{padding:12px;display:flex;flex-direction:column;gap:10px}
+.grp{border:1px dashed var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.cond{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.2fr) minmax(0,1.3fr) auto;gap:6px;align-items:center}
+@media (max-width:640px){.cond{grid-template-columns:1fr 1fr auto}.cond>:first-child{grid-column:1/-1}}
+.joiner{display:flex;justify-content:center}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;font-family:var(--f-mono);font-size:12px}
+.toggle button{border:0;background:var(--surface);padding:4px 12px;cursor:pointer;color:var(--muted)}
+.toggle button.on{background:var(--ink);color:var(--bg)}
+.act{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:6px;align-items:center}
+@media (max-width:640px){.act{grid-template-columns:1fr auto}.act>:nth-child(2){grid-column:1/-1;grid-row:2}}
+.val{border-radius:8px;padding:10px 12px;background:var(--warn-soft);color:var(--warn);font-size:13.5px}
+.val ul{margin:4px 0 0;padding-left:18px}
+.addbar{display:flex;gap:6px;flex-wrap:wrap}
+.sec-block{border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.sec-title{display:flex;gap:8px;align-items:center}
+.sec-title input{font-weight:600;max-width:320px}
+/* report paper (always light; it is printed) */
+.paper-wrap{overflow-x:auto;margin-top:16px}
+.paper{background:var(--paper);color:var(--paper-ink);width:100%;max-width:794px;margin:0 auto;padding:36px 40px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.12);font-family:var(--f-body);font-size:13px;line-height:1.55}
+.paper h1{font-size:21px;color:var(--paper-ink)}
+.paper h2{font-size:14.5px;color:var(--paper-accent);margin-top:18px;margin-bottom:6px;padding-bottom:4px;border-bottom:1.5px solid var(--paper-accent)}
+.paper h3{font-size:12px;margin:12px 0 4px;color:var(--paper-muted);text-transform:uppercase;letter-spacing:.06em}
+.paper h4{font-size:13px;margin:8px 0 2px;color:var(--paper-ink)}
+.paper .ph-h{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;border-bottom:3px double var(--paper-line);padding-bottom:12px;flex-wrap:wrap}
+.paper table{width:100%;border-collapse:collapse}
+.paper td,.paper th{border-bottom:1px solid var(--paper-line);padding:4px 6px;text-align:left;vertical-align:top}
+.paper th{font-weight:600;color:var(--paper-muted);width:40%}
+.paper .pm{color:var(--paper-muted)}
+.paper .tag{display:inline-block;border:1px solid var(--paper-line);border-radius:4px;padding:0 6px;font-size:11px;margin-left:6px}
+.paper .pos{color:#a11d25;font-weight:600}.paper .neg{color:#1d6b34}
+.paper .note{border:1px solid var(--paper-line);border-radius:6px;padding:8px 10px;margin-top:6px}
+.paper .reg{border:1px solid var(--paper-line);border-radius:8px;padding:2px 14px 12px;margin-top:16px}
+.paper .sig{display:flex;justify-content:space-between;gap:24px;margin-top:36px;flex-wrap:wrap}
+.paper .sig div{border-top:1px solid var(--paper-ink);padding-top:4px;min-width:180px}
+.paper .disc{font-size:11px;color:var(--paper-muted);margin-top:18px}
+.paper ul{margin:2px 0;padding-left:18px}
+.avoid{break-inside:avoid;page-break-inside:avoid}
+@media (max-width:600px){.paper{padding:22px 16px}.later ul{columns:1}}
+@media print{.top,.bar,.noprint,#toast{display:none!important}html,body{background:#fff}#app{padding:0;max-width:none}.paper-wrap{margin:0}.paper{box-shadow:none;padding:0;max-width:none}}
+@media (prefers-reduced-motion:reduce){.q.appear{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="app" dir="ltr" lang="en"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<script>
+const EXAMPLE = {"schema": 3, "clinic": {"name": "Physiotherapy Clinic", "therapist": "", "exerciseUrl": "https://nasiphysio.github.io/Home-ex"}, "bodyAreas": [{"name": "Cervical spine", "group": "Head & neck"}, {"name": "TMJ", "group": "Head & neck"}, {"name": "Shoulder", "group": "Upper limb"}, {"name": "Elbow", "group": "Upper limb"}, {"name": "Wrist / Hand", "group": "Upper limb"}, {"name": "Thoracic spine", "group": "Trunk"}, {"name": "Lumbar spine", "group": "Trunk"}, {"name": "Pelvis / SIJ", "group": "Trunk"}, {"name": "Hip", "group": "Lower limb"}, {"name": "Knee", "group": "Lower limb"}, {"name": "Ankle / Foot", "group": "Lower limb"}], "templates": [{"id": "tpl_msk", "name": "General musculoskeletal", "areas": [], "sections": {"S": ["Complaint", "History", "Pain", "Function"], "O": ["Observation", "Palpation", "ROM", "Strength", "Special tests", "Neuro"], "A": ["Red flags", "Findings", "Clinical impression"], "P": ["Plan"]}, "items": [{"id": "s_cc", "type": "short", "label": "Chief complaint", "part": "S", "section": "Complaint", "options": [], "unit": "", "normal": "", "required": true, "areas": [], "help": "In the patient's own words"}, {"id": "s_onset", "type": "choice", "label": "Onset", "part": "S", "section": "Complaint", "options": ["Sudden", "Gradual", "Insidious"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_dur", "type": "choice", "label": "Duration", "part": "S", "section": "Complaint", "options": ["Under 2 weeks", "2–6 weeks", "6–12 weeks", "Over 3 months"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_mech", "type": "choice", "label": "Mechanism of injury", "part": "S", "section": "Complaint", "options": ["Trauma / fall", "Twisting", "Overuse", "Post-surgical", "No clear mechanism"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_mechd", "type": "short", "label": "Trauma details", "part": "S", "section": "Complaint", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": "How, when, and immediate symptoms (swelling, unable to continue)"}, {"id": "s_giving", "type": "yesno", "label": "Giving way / instability", "part": "S", "section": "Complaint", "options": [], "unit": "", "normal": "", "required": false, "areas": ["Knee", "Ankle / Foot", "Shoulder"], "help": ""}, {"id": "s_lock", "type": "yesno", "label": "Locking or catching", "part": "S", "section": "Complaint", "options": [], "unit": "", "normal": "", "required": false, "areas": ["Knee"], "help": ""}, {"id": "s_prev", "type": "yesno", "label": "Previous episodes", "part": "S", "section": "History", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_img", "type": "text", "label": "Imaging / investigations", "part": "S", "section": "History", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": "X-ray, MRI, ultrasound results"}, {"id": "s_pain", "type": "yesno", "label": "Pain present", "part": "S", "section": "Pain", "options": [], "unit": "", "normal": "", "required": true, "areas": [], "help": ""}, {"id": "s_nprs", "type": "scale", "label": "Pain intensity (NPRS)", "part": "S", "section": "Pain", "options": [], "unit": "/10", "normal": "", "required": false, "areas": [], "help": "0 = no pain, 10 = worst imaginable"}, {"id": "s_ploc", "type": "short", "label": "Pain location", "part": "S", "section": "Pain", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": "e.g. anterior knee, medial joint line"}, {"id": "s_pbeh", "type": "checklist", "label": "Pain behaviour", "part": "S", "section": "Pain", "options": ["Constant", "Intermittent", "Worse in the morning", "Worse in the evening", "Wakes at night", "Activity-related"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_agg", "type": "checklist", "label": "Aggravating factors", "part": "S", "section": "Pain", "options": ["Walking", "Stairs", "Sitting", "Standing", "Bending", "Lifting", "Overhead activity", "Lying on the side"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_rel", "type": "checklist", "label": "Relieving factors", "part": "S", "section": "Pain", "options": ["Rest", "Movement", "Heat", "Ice", "Medication", "Position change"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_func", "type": "checklist", "label": "Functional limitations", "part": "S", "section": "Function", "options": ["Walking", "Stairs", "Squatting", "Running", "Reaching overhead", "Dressing", "Sleeping", "Work tasks", "Sport"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "s_goal", "type": "short", "label": "Patient goals", "part": "S", "section": "Function", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_obs", "type": "checklist", "label": "Observation", "part": "O", "section": "Observation", "options": ["Swelling", "Redness", "Bruising", "Deformity", "Muscle wasting", "Antalgic gait", "Postural deviation"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_obsn", "type": "text", "label": "Observation notes", "part": "O", "section": "Observation", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_tend", "type": "yesno", "label": "Tenderness on palpation", "part": "O", "section": "Palpation", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_tsite", "type": "short", "label": "Tender sites", "part": "O", "section": "Palpation", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_temp", "type": "choice", "label": "Local temperature", "part": "O", "section": "Palpation", "options": ["Normal", "Warm"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_romlim", "type": "choice", "label": "Active ROM limitation", "part": "O", "section": "ROM", "options": ["None", "Mild", "Moderate", "Severe"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_kflex", "type": "measurement", "label": "Knee flexion", "part": "O", "section": "ROM", "options": [], "unit": "°", "normal": "135", "required": false, "areas": ["Knee"], "help": "Goniometer, supine"}, {"id": "o_kext", "type": "measurement", "label": "Knee extension", "part": "O", "section": "ROM", "options": [], "unit": "°", "normal": "0", "required": false, "areas": ["Knee"], "help": "Negative value = extension lag"}, {"id": "o_sflex", "type": "measurement", "label": "Shoulder flexion", "part": "O", "section": "ROM", "options": [], "unit": "°", "normal": "180", "required": false, "areas": ["Shoulder"], "help": ""}, {"id": "o_sabd", "type": "measurement", "label": "Shoulder abduction", "part": "O", "section": "ROM", "options": [], "unit": "°", "normal": "180", "required": false, "areas": ["Shoulder"], "help": ""}, {"id": "o_ser", "type": "measurement", "label": "Shoulder external rotation", "part": "O", "section": "ROM", "options": [], "unit": "°", "normal": "90", "required": false, "areas": ["Shoulder"], "help": ""}, {"id": "o_lflex", "type": "choice", "label": "Lumbar flexion", "part": "O", "section": "ROM", "options": ["Full", "75%", "50%", "25% or less"], "unit": "", "normal": "", "required": false, "areas": ["Lumbar spine"], "help": ""}, {"id": "o_mmt", "type": "choice", "label": "Key muscle strength (MMT)", "part": "O", "section": "Strength", "options": ["0", "1", "2", "3", "4", "5"], "unit": "/5", "normal": "", "required": false, "areas": [], "help": "Oxford scale"}, {"id": "o_mmtm", "type": "short", "label": "Muscle group tested", "part": "O", "section": "Strength", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": "e.g. Quadriceps, Rotator cuff ER"}, {"id": "t_lach", "type": "test", "label": "Lachman test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Knee"], "help": "Knee in 20–30° flexion; stabilise the femur and draw the tibia forward."}, {"id": "t_adraw", "type": "test", "label": "Anterior drawer test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Knee"], "help": "Knee at 90° flexion, foot fixed; draw the tibia forward."}, {"id": "t_mcm", "type": "test", "label": "McMurray test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Knee"], "help": "Full flexion with tibial rotation while extending; positive with pain or a click."}, {"id": "t_valg", "type": "test", "label": "Valgus stress test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Knee"], "help": "At 0° and 30° flexion."}, {"id": "t_hk", "type": "test", "label": "Hawkins–Kennedy test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Shoulder"], "help": ""}, {"id": "t_neer", "type": "test", "label": "Neer test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Shoulder"], "help": ""}, {"id": "t_ecan", "type": "test", "label": "Empty can test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Shoulder"], "help": ""}, {"id": "t_slr", "type": "test", "label": "Straight leg raise", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Lumbar spine"], "help": "Positive if leg symptoms reproduced between 30–70°."}, {"id": "t_slump", "type": "test", "label": "Slump test", "part": "O", "section": "Special tests", "options": ["Positive", "Negative", "Equivocal"], "unit": "", "normal": "", "required": false, "areas": ["Lumbar spine"], "help": ""}, {"id": "o_neuro", "type": "yesno", "label": "Neurological symptoms (numbness, tingling, weakness)", "part": "O", "section": "Neuro", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_derm", "type": "choice", "label": "Sensation (dermatomes)", "part": "O", "section": "Neuro", "options": ["Normal", "Reduced", "Absent"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_myo", "type": "choice", "label": "Myotomes", "part": "O", "section": "Neuro", "options": ["Normal", "Weak"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "o_refl", "type": "choice", "label": "Reflexes", "part": "O", "section": "Neuro", "options": ["Normal", "Reduced", "Brisk"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "a_rf", "type": "checklist", "label": "Red flag screen", "part": "A", "section": "Red flags", "options": ["None", "Unexplained weight loss", "Night pain not eased by rest", "Fever / unwell", "Saddle anaesthesia", "Bladder or bowel change", "History of cancer", "Progressive neurological deficit"], "unit": "", "normal": "", "required": true, "areas": [], "help": ""}, {"id": "a_find", "type": "text", "label": "Clinical findings summary", "part": "A", "section": "Findings", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": "Automatic findings from the rules are listed beside the form."}, {"id": "a_imp", "type": "text", "label": "Clinical impression", "part": "A", "section": "Clinical impression", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "a_irr", "type": "choice", "label": "Irritability", "part": "A", "section": "Clinical impression", "options": ["Low", "Moderate", "High"], "unit": "", "normal": "", "required": false, "areas": [], "help": ""}, {"id": "p_note", "type": "text", "label": "Plan summary", "part": "P", "section": "Plan", "options": [], "unit": "", "normal": "", "required": false, "areas": [], "help": "Brief plan for this region. Full treatment planning is a separate step after the assessment."}], "diagnoses": [{"id": "d_acl", "name": "ACL injury (suspected)", "code": "S83.5"}, {"id": "d_men", "name": "Meniscal injury (suspected)", "code": "S83.2"}, {"id": "d_mcl", "name": "MCL sprain (suspected)", "code": "S83.4"}, {"id": "d_saps", "name": "Subacromial pain syndrome", "code": "M75.4"}, {"id": "d_rad", "name": "Lumbar radiculopathy (suspected)", "code": "M54.1"}], "rules": [{"id": "r_pain", "name": "Pain present → pain details", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "s_pain", "op": "eq", "value": "Yes"}]}], "actions": [{"type": "show", "target": "s_nprs"}, {"type": "show", "target": "s_ploc"}, {"type": "show", "target": "s_pbeh"}, {"type": "require", "target": "s_nprs"}]}, {"id": "r_nopain", "name": "No pain → hide aggravating / relieving", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "s_pain", "op": "eq", "value": "No"}]}], "actions": [{"type": "hide", "target": "s_agg"}, {"type": "hide", "target": "s_rel"}]}, {"id": "r_trauma", "name": "Trauma → details", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "s_mech", "op": "eq", "value": "Trauma / fall"}]}], "actions": [{"type": "show", "target": "s_mechd"}]}, {"id": "r_tend", "name": "Tenderness → sites", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "o_tend", "op": "eq", "value": "Yes"}]}], "actions": [{"type": "show", "target": "o_tsite"}]}, {"id": "r_neuro", "name": "Neuro symptoms or spine → neuro exam", "logic": "or", "groups": [{"logic": "and", "conds": [{"item": "o_neuro", "op": "eq", "value": "Yes"}]}, {"logic": "or", "conds": [{"item": "_area", "op": "eq", "value": "Lumbar spine"}, {"item": "_area", "op": "eq", "value": "Cervical spine"}]}], "actions": [{"type": "show", "target": "o_derm"}, {"type": "show", "target": "o_myo"}, {"type": "show", "target": "o_refl"}]}, {"id": "r_lig", "name": "Instability or twisting → knee ligament tests", "logic": "or", "groups": [{"logic": "and", "conds": [{"item": "s_giving", "op": "eq", "value": "Yes"}]}, {"logic": "and", "conds": [{"item": "s_mech", "op": "eq", "value": "Twisting"}]}], "actions": [{"type": "show", "target": "t_lach"}, {"type": "show", "target": "t_adraw"}, {"type": "show", "target": "t_valg"}]}, {"id": "r_lock", "name": "Locking → McMurray", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "s_lock", "op": "eq", "value": "Yes"}]}], "actions": [{"type": "show", "target": "t_mcm"}]}, {"id": "r_high", "name": "High pain", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "s_nprs", "op": "gte", "value": "7"}]}], "actions": [{"type": "finding", "text": "High pain intensity (NPRS ≥ 7)"}]}, {"id": "r_irrit", "name": "High pain with swelling", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "s_nprs", "op": "gte", "value": "7"}, {"item": "o_obs", "op": "has", "value": "Swelling"}]}], "actions": [{"type": "warning", "text": "High irritability: control pain and swelling before loading."}]}, {"id": "r_inflam", "name": "Redness and warmth", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "o_obs", "op": "has", "value": "Redness"}, {"item": "o_temp", "op": "eq", "value": "Warm"}]}], "actions": [{"type": "warning", "text": "Red, warm joint: rule out infection or inflammatory arthritis before treatment."}]}, {"id": "r_rf", "name": "Red flags present", "logic": "or", "groups": [{"logic": "or", "conds": [{"item": "a_rf", "op": "has", "value": "Unexplained weight loss"}, {"item": "a_rf", "op": "has", "value": "Night pain not eased by rest"}, {"item": "a_rf", "op": "has", "value": "Fever / unwell"}, {"item": "a_rf", "op": "has", "value": "Saddle anaesthesia"}, {"item": "a_rf", "op": "has", "value": "Bladder or bowel change"}, {"item": "a_rf", "op": "has", "value": "History of cancer"}, {"item": "a_rf", "op": "has", "value": "Progressive neurological deficit"}]}], "actions": [{"type": "warning", "text": "Red flags present: refer for medical review before starting treatment."}]}, {"id": "r_flexlim", "name": "Knee flexion limited", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "o_kflex", "op": "lt", "value": "110"}]}], "actions": [{"type": "finding", "text": "Knee flexion limited (< 110°)"}]}, {"id": "r_acl", "name": "ACL criteria", "logic": "and", "groups": [{"logic": "or", "conds": [{"item": "t_lach", "op": "eq", "value": "Positive"}, {"item": "t_adraw", "op": "eq", "value": "Positive"}]}, {"logic": "and", "conds": [{"item": "s_giving", "op": "eq", "value": "Yes"}]}], "actions": [{"type": "diagnosis", "target": "d_acl"}, {"type": "finding", "text": "Anterior knee laxity"}]}, {"id": "r_men", "name": "Meniscus criteria", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "t_mcm", "op": "eq", "value": "Positive"}]}], "actions": [{"type": "diagnosis", "target": "d_men"}]}, {"id": "r_mcl", "name": "MCL criteria", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "t_valg", "op": "eq", "value": "Positive"}]}], "actions": [{"type": "diagnosis", "target": "d_mcl"}]}, {"id": "r_saps", "name": "Subacromial criteria", "logic": "and", "groups": [{"logic": "or", "conds": [{"item": "t_hk", "op": "eq", "value": "Positive"}, {"item": "t_neer", "op": "eq", "value": "Positive"}]}], "actions": [{"type": "diagnosis", "target": "d_saps"}, {"type": "finding", "text": "Positive subacromial provocation tests"}]}, {"id": "r_ecan", "name": "Empty can positive", "logic": "and", "groups": [{"logic": "and", "conds": [{"item": "t_ecan", "op": "eq", "value": "Positive"}]}], "actions": [{"type": "finding", "text": "Supraspinatus pain or weakness"}]}, {"id": "r_rad", "name": "Radiculopathy criteria", "logic": "and", "groups": [{"logic": "or", "conds": [{"item": "t_slr", "op": "eq", "value": "Positive"}, {"item": "t_slump", "op": "eq", "value": "Positive"}]}], "actions": [{"type": "diagnosis", "target": "d_rad"}, {"type": "finding", "text": "Positive neurodynamic test"}]}]}]};
+
+/* ================= helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = p => p + '_' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 7);
+const clone = o => JSON.parse(JSON.stringify(o));
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const fmtDate = d => { if (!d) return '—'; try { return new Date(d + (String(d).length === 10 ? 'T12:00' : '')).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}); } catch { return d; } };
+const daysFromToday = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
+
+const PARTS = [['S','Subjective'],['O','Objective'],['A','Assessment'],['P','Plan']];
+const PART_COLOR = {S:'var(--s)', O:'var(--o)', A:'var(--a)', P:'var(--p)'};
+const TYPES = {short:'Question', choice:'Choice', checklist:'Checklist', measurement:'Measurement', text:'Text', number:'Number', yesno:'Yes / No', test:'Special test', scale:'Pain scale 0–10'};
+const OPS = {eq:'equals', neq:'does not equal', gt:'greater than', gte:'at least', lt:'less than', lte:'at most', has:'contains', nhas:'does not contain', answered:'is answered', empty:'is not answered'};
+const NUMOPS = ['eq','neq','gt','gte','lt','lte','answered','empty'];
+const OPS_BY = {short:['has','answered','empty'], text:['has','answered','empty'], choice:NUMOPS, checklist:['has','nhas','answered','empty'], measurement:NUMOPS, number:NUMOPS, scale:NUMOPS, yesno:['eq','neq','answered','empty'], test:['eq','neq','answered','empty']};
+const ACTS = {show:'Show field', hide:'Hide field', require:'Require field', warning:'Warning', finding:'Clinical finding', diagnosis:'Suggested diagnosis'};
+const SIDES = ['Right', 'Left', 'Bilateral', 'Midline'];
+const VISIT_TYPES = ['Initial assessment', 'Follow-up', 'Re-assessment', 'Discharge'];
+const TREATMENT_LATER = ['Treatment plan', 'Goals', 'Exercises', 'Modalities', 'Frequency', 'Duration', 'Home exercise program', 'Progress'];
+const isMidline = a => /spine|SIJ|Pelvis|TMJ|Thoracic|Lumbar|Cervical/i.test(a);
+
+function optionsOf(it) {
+  if (it.type === 'yesno') return ['Yes', 'No'];
+  if (it.type === 'test') return it.options?.length ? it.options : ['Positive', 'Negative', 'Equivocal'];
+  return it.options || [];
+}
+function blankTemplate(name) { return {id:uid('tpl'), name, areas:[], sections:{S:['Complaint','History','Pain','Function'], O:['Observation','Palpation','ROM','Strength','Special tests','Neuro'], A:['Red flags','Findings','Clinical impression'], P:['Plan']}, items:[], rules:[], diagnoses:[]}; }
+function normalize(c) {
+  c = c && typeof c === 'object' ? c : {};
+  const out = {schema:3, clinic:Object.assign({name:'', therapist:'', exerciseUrl:''}, c.clinic || {}), bodyAreas:c.bodyAreas || [], templates:c.templates || [], updatedAt:c.updatedAt || 0};
+  out.templates.forEach(t => { t.sections ||= {S:[],O:[],A:[],P:[]}; PARTS.forEach(([p]) => t.sections[p] ||= []); t.items ||= []; t.rules ||= []; t.diagnoses ||= []; t.areas ||= []; });
+  return out;
+}
+
+/* ================= state ================= */
+const S = {
+  cfg:normalize({}), patients:[], visits:[], loaded:false, mode:'loading', db:null, dl:null, user:null, canAdmin:true,
+  route:{page:'home', id:null}, visit:null, patient:null, regionId:null, part:'S', picker:null,
+  tplId:null, btab:'fields', bpart:'S', open:null, arm:null, q:'', newPt:null,
+  prevVisible:new Set(), lastVisKey:'', status:'Loading…', statusKind:'busy', cfgDirty:false
+};
+const tplById = id => S.cfg.templates.find(t => t.id === id) || S.cfg.templates[0];
+const tplFor = area => S.cfg.templates.find(t => t.areas?.includes(area)) || S.cfg.templates.find(t => !t.areas?.length) || S.cfg.templates[0];
+const regionName = r => [r.side && r.side !== 'Midline' ? r.side : '', r.area || 'New region'].filter(Boolean).join(' ');
+const patientOf = v => S.patients.find(p => p.id === v?.patientId);
+
+/* ================= rule engine (generic: no clinical logic in code) ================= */
+const PSEUDO = () => [{id:'_area', type:'choice', label:'Region › body area', options:S.cfg.bodyAreas.map(a => a.name)}, {id:'_side', type:'choice', label:'Region › side', options:SIDES}];
+const itemIn = (tpl, id) => tpl?.items.find(i => i.id === id) || PSEUDO().find(p => p.id === id);
+function testCond(c, ans, visible) {
+  if (!c.item) return false;
+  const v = (c.item[0] === '_' || visible.has(c.item)) ? ans[c.item] : undefined;
+  const empty = v === undefined || v === '' || (Array.isArray(v) && !v.length);
+  if (c.op === 'empty') return empty;
+  if (empty) return false;
+  if (c.op === 'answered') return true;
+  const want = c.value ?? '';
+  if (c.op === 'has') return Array.isArray(v) ? v.includes(want) : String(v).toLowerCase().includes(String(want).toLowerCase());
+  if (c.op === 'nhas') return Array.isArray(v) ? !v.includes(want) : !String(v).toLowerCase().includes(String(want).toLowerCase());
+  const a = parseFloat(v), b = parseFloat(want), numeric = !isNaN(a) && !isNaN(b) && /^-?[\d.]+%?$/.test(String(v).trim());
+  switch (c.op) {
+    case 'eq': return numeric ? a === b : String(v) === String(want);
+    case 'neq': return numeric ? a !== b : String(v) !== String(want);
+    case 'gt': return numeric && a > b; case 'gte': return numeric && a >= b;
+    case 'lt': return numeric && a < b; case 'lte': return numeric && a <= b;
+  }
+  return false;
+}
+function testRule(r, ans, visible) {
+  const groups = (r.groups || []).filter(g => (g.conds || []).length);
+  if (!groups.length) return false;
+  const res = groups.map(g => g.logic === 'or' ? g.conds.some(c => testCond(c, ans, visible)) : g.conds.every(c => testCond(c, ans, visible)));
+  return r.logic === 'or' ? res.some(Boolean) : res.every(Boolean);
+}
+function evaluate(tpl, region) {
+  const out = {visible:new Set(), conditional:new Set(), fired:[], required:new Set(), dx:new Map(), warnings:[], findings:[], items:[]};
+  if (!tpl) return out;
+  const ans = Object.assign({}, region?.answers || {}, {_area:region?.area || '', _side:region?.side || ''});
+  tpl.rules.forEach(r => (r.actions || []).forEach(a => a.type === 'show' && a.target && out.conditional.add(a.target)));
+  const inArea = tpl.items.filter(i => !region?.area || !i.areas?.length || i.areas.includes(region.area)).map(i => i.id);
+  const inSet = new Set(inArea), base = inArea.filter(id => !out.conditional.has(id));
+  let visible = new Set(base), fired = [];
+  for (let pass = 0; pass < 12; pass++) {
+    fired = tpl.rules.filter(r => testRule(r, ans, visible));
+    const next = new Set(base);
+    fired.forEach(r => r.actions.forEach(a => a.type === 'show' && inSet.has(a.target) && next.add(a.target)));
+    fired.forEach(r => r.actions.forEach(a => a.type === 'hide' && next.delete(a.target)));
+    const same = next.size === visible.size && [...next].every(x => visible.has(x));
+    visible = next; if (same) break;
+  }
+  out.visible = visible; out.fired = fired;
+  tpl.items.forEach(i => i.required && visible.has(i.id) && out.required.add(i.id));
+  fired.forEach(r => r.actions.forEach(a => {
+    if (a.type === 'require' && visible.has(a.target)) out.required.add(a.target);
+    if (a.type === 'diagnosis' && a.target) { const d = out.dx.get(a.target) || {rules:[]}; d.rules.push(r); out.dx.set(a.target, d); }
+    if (a.type === 'warning' && a.text && !out.warnings.includes(a.text)) out.warnings.push(a.text);
+    if (a.type === 'finding' && a.text && !out.findings.includes(a.text)) out.findings.push(a.text);
+  }));
+  out.items = tpl.items.filter(i => visible.has(i.id));
+  return out;
+}
+function condText(tpl, c) {
+  const it = itemIn(tpl, c.item);
+  const v = ['answered','empty'].includes(c.op) ? '' : ' ' + (c.value ?? '') + (it?.unit && ['measurement','number','scale'].includes(it.type) ? it.unit : '');
+  return `${it ? it.label : '? (deleted)'} ${OPS[c.op] || c.op}${v}`;
+}
+function ruleText(tpl, r) {
+  const groups = (r.groups || []).filter(g => g.conds?.length), j = l => l === 'or' ? ' or ' : ' and ';
+  return groups.map(g => { const t = g.conds.map(c => condText(tpl, c)).join(j(g.logic)); return groups.length > 1 && g.conds.length > 1 ? `(${t})` : t; }).join(j(r.logic));
+}
+function validate(tpl) {
+  const w = [], ids = new Set(tpl.items.map(i => i.id).concat(['_area', '_side']));
+  tpl.rules.forEach(r => {
+    const n = r.name || 'Untitled rule';
+    if (!(r.actions || []).length) w.push(`“${n}” has no THEN action.`);
+    if (!(r.groups || []).some(g => g.conds?.length)) w.push(`“${n}” has no IF condition.`);
+    (r.groups || []).forEach(g => g.conds.forEach(c => !ids.has(c.item) && w.push(`“${n}” depends on a field that no longer exists.`)));
+    (r.actions || []).forEach(a => {
+      if (['show','hide','require'].includes(a.type) && !ids.has(a.target)) w.push(`“${n}” targets a field that no longer exists.`);
+      if (a.type === 'diagnosis' && !tpl.diagnoses.some(d => d.id === a.target)) w.push(`“${n}” suggests a diagnosis that no longer exists.`);
+      if (['warning','finding'].includes(a.type) && !a.text?.trim()) w.push(`“${n}” has an empty ${a.type} message.`);
+    });
+  });
+  tpl.diagnoses.forEach(d => !tpl.rules.some(r => r.actions?.some(a => a.type === 'diagnosis' && a.target === d.id)) && w.push(`Diagnosis “${d.name}” has no criteria (no rule suggests it).`));
+  const shown = new Set(); tpl.rules.forEach(r => r.actions.forEach(a => a.type === 'show' && shown.add(a.target)));
+  tpl.items.forEach(i => { if (!tpl.sections[i.part]?.includes(i.section)) w.push(`“${i.label}” is in a section that no longer exists.`); });
+  return [...new Set(w)];
+}
+
+/* ================= storage: shared db when available, this device otherwise ================= */
+const LS = {get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }};
+function setStatus(t, k) { S.status = t; S.statusKind = k; const el = $('#status'); if (el) el.innerHTML = statusHTML(); }
+const pend = {};
+const anyPending = () => S.cfgDirty || Object.values(pend).some(p => p.dirty);
+const savedMsg = () => S.db ? 'All changes saved' : 'Saved on this device';
+const failMsg = e => e?.code === 'permission-denied' ? 'You don’t have permission to save this' : e?.code === 'resource-exhausted' ? 'Storage is full' : 'Save failed, check your connection';
+async function writeDoc(coll, body) {
+  if (S.db) return S.db.collection(coll).doc(body.id).set(body);
+  const arr = LS.get('pf3_' + coll, []), i = arr.findIndex(x => x.id === body.id); i < 0 ? arr.unshift(body) : arr[i] = body; LS.set('pf3_' + coll, arr);
+}
+async function deleteDoc(coll, id) {
+  if (S.db) return S.db.collection(coll).doc(id).delete();
+  LS.set('pf3_' + coll, LS.get('pf3_' + coll, []).filter(x => x.id !== id));
+}
+function upsert(list, obj) { const i = list.findIndex(x => x.id === obj.id); i < 0 ? list.unshift(obj) : list[i] = obj; }
+function queueSave(coll, obj, delay = 600) {
+  if (!obj || obj._preview) return;
+  obj.updatedAt = Date.now(); upsert(coll === 'patients' ? S.patients : S.visits, obj);
+  const k = coll + '/' + obj.id, p = pend[k] ||= {chain:Promise.resolve(), t:null, dirty:false};
+  p.dirty = true; setStatus('Saving…', 'busy'); clearTimeout(p.t);
+  p.t = setTimeout(() => {
+    const body = clone(obj);
+    p.chain = p.chain.then(() => writeDoc(coll, body)).then(() => { p.dirty = false; if (!anyPending()) setStatus(savedMsg(), 'ok'); })
+      .catch(e => { p.dirty = false; setStatus(failMsg(e), 'err'); });
+  }, delay);
+}
+let cfgT, cfgChain = Promise.resolve();
+function touch() {
+  S.cfgDirty = true; setStatus('Saving…', 'busy'); clearTimeout(cfgT);
+  cfgT = setTimeout(() => {
+    S.cfg.updatedAt = Date.now(); const body = clone(S.cfg);
+    cfgChain = cfgChain.then(async () => { if (S.db) await S.db.doc('config/main').set(body); else LS.set('pf3_cfg', body); S.cfgDirty = false; if (!anyPending()) setStatus(savedMsg(), 'ok'); })
+      .catch(e => { S.cfgDirty = false; setStatus(failMsg(e), 'err'); });
+  }, 700);
+}
+/* Firebase web config, from the Firebase console (Project settings › Your apps). Left empty, the app saves on this device only. */
+const FIREBASE_CONFIG = {apiKey:'AIzaSyBZ2K1ir7P1lKXGdPPIBLseKIqUD4Y4qAA', authDomain:'physio-assessment-62dc6.firebaseapp.com', projectId:'physio-assessment-62dc6', storageBucket:'physio-assessment-62dc6.firebasestorage.app', messagingSenderId:'800108277348', appId:'1:800108277348:web:9df0c9ca7f8acc832b3971'};
+let unsubs = [];
+function stopListen() { unsubs.forEach(u => u()); unsubs = []; }
+function listen(db) {
+    S.db = db; S.mode = 'cloud'; S.loaded = false; setStatus('Synced', 'ok'); render();
+    const fail = e => {
+      if (e?.code !== 'permission-denied') return setStatus('Connection lost, reopen the page', 'err');
+      stopListen(); S.db = null; S.mode = 'denied'; S.loaded = true; S.patients = []; S.visits = []; setStatus('No access', 'err'); render();
+    };
+    let got = 0; const ready = () => { if (++got >= 3 && S.mode === 'cloud') { S.loaded = true; render(); } };
+    unsubs.push(db.doc('config/main').onSnapshot(s => {
+      const first = !S.loaded && got < 3;
+      if (S.cfgDirty) return first && ready();
+      const incoming = normalize(s.exists ? clone(s.data()) : {});
+      if (!incoming.templates.length) { S.cfg = normalize(clone(EXAMPLE)); }
+      else { const changed = JSON.stringify(incoming) !== JSON.stringify(S.cfg); S.cfg = incoming; if (changed && S.loaded) render(); }
+      if (first) ready();
+    }, fail));
+    const sub = (coll, key) => { let first = true; unsubs.push(db.collection(coll).orderBy('updatedAt', 'desc').limit(1000).onSnapshot(q => {
+      const list = q.docs.map(d => clone(d.data()));
+      const cur = key === 'visits' ? S.visit : S.patient;
+      if (cur && !cur._preview) { const i = list.findIndex(x => x.id === cur.id); if (i >= 0) list[i] = cur; }
+      S[key] = list; if (first) { first = false; ready(); } else if (!document.activeElement || !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) render();
+    }, e => { if (first) { first = false; ready(); } fail(e); })); };
+    sub('patients', 'patients'); sub('visits', 'visits');
+}
+function boot() {
+  render();
+  if (!FIREBASE_CONFIG.apiKey || !window.firebase) {
+    S.mode = 'local';
+    S.cfg = normalize(LS.get('pf3_cfg', null) || clone(EXAMPLE));
+    S.patients = LS.get('pf3_patients', []); S.visits = LS.get('pf3_visits', []); S.loaded = true;
+    setStatus('Saved on this device only', 'busy'); return render();
+  }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  firebase.auth().onAuthStateChanged(u => {
+    stopListen(); S.user = u;
+    if (u) return listen(firebase.firestore());
+    S.db = null; S.mode = 'signin'; S.loaded = true; S.patients = []; S.visits = []; S.visit = S.patient = null; S.route = {page:'home', id:null};
+    setStatus('Signed out', 'busy'); render();
+  });
+}
+
+/* ================= navigation ================= */
+function go(page, id = null, opts = {}) {
+  S.route = {page, id}; S.open = null; S.picker = null; S.arm = null; S.prevVisible = new Set();
+  if (page === 'visit') {
+    const v = opts.visit || S.visits.find(x => x.id === id);
+    if (!v) return go('home');
+    S.visit = v; S.regionId = opts.regionId || v.assessment.regions[0]?.id || null; S.part = 'S';
+    if (!v.assessment.regions.length) S.picker = {area:'', side:'Right', custom:''};
+  }
+  if (page === 'patient') { S.patient = S.patients.find(p => p.id === id) || null; if (!S.patient) return go('patients'); }
+  if (page === 'builder' && !S.tplId) S.tplId = S.cfg.templates[0]?.id;
+  render(); window.scrollTo(0, 0);
+}
+
+/* ================= render ================= */
+function statusHTML() { return `<span class="dot ${S.statusKind}"></span>${esc(S.status)}`; }
+function render() {
+  const scrollY = window.scrollY, focusId = document.activeElement?.id;
+  const pg = S.route.page, gated = S.mode === 'signin' || S.mode === 'denied';
+  const activeTab = {home:'home', newvisit:'home', patients:'patients', patient:'patients', report:'patients', visit:S.visit?._preview ? 'builder' : 'patients', builder:'builder', settings:'settings'}[pg];
+  $('#app').innerHTML = `
+  <header class="top">
+    <div class="brand">
+      <h1><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h3l2-5 4 10 2-5h3"/></svg></span>${esc(S.cfg.clinic.name || 'Physio Assessment')}</h1>
+      <div class="status" id="status">${statusHTML()}</div>
+    </div>
+    ${gated ? '' : `<nav class="tabs">${[['home','Dashboard'],['patients','Patients'],['builder','Templates & builder'],['settings','Settings']].map(([k, l]) => `<button class="tab ${activeTab === k ? 'on' : ''}" data-act="go" data-v="${k}">${l}</button>`).join('')}</nav>`}
+  </header>
+  ${!S.loaded ? `<div class="empty" style="margin-top:24px">Loading…</div>` : gated ? viewSignIn() : ({home:viewHome, newvisit:viewNewVisit, patients:viewPatients, patient:viewPatient, visit:viewVisit, report:viewReport, builder:viewBuilder, settings:viewSettings}[pg] || viewHome)()}`;
+  if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus({preventScroll:true}); if (el.setSelectionRange && /text|search/.test(el.type)) { const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } }
+  window.scrollTo(0, scrollY);
+}
+
+/* ----- sign-in ----- */
+function viewSignIn() {
+  const denied = S.mode === 'denied';
+  return `<div class="card stack" style="max-width:420px;margin:48px auto 0;text-align:center">
+    <h2>${denied ? 'No access' : 'Sign in'}</h2>
+    <div class="muted">${denied ? `${esc(S.user?.email || 'This account')} isn’t allowed to open this clinic’s records.` : 'Patient records are private. Sign in with the clinic’s Google account to continue.'}</div>
+    <div><button class="btn pri" data-act="${denied ? 'signOut' : 'signIn'}">${denied ? 'Use another account' : 'Sign in with Google'}</button></div></div>`;
+}
+
+/* ----- dashboard ----- */
+function visitSummary(v) {
+  const regs = v.assessment?.regions || [];
+  const dx = [...new Set(regs.flatMap(r => { const t = tplById(r.templateId); const ev = evaluate(t, r); return [...ev.dx.keys()].map(id => t?.diagnoses.find(d => d.id === id)?.name).filter(Boolean); }))];
+  return {regs:regs.map(regionName), dx};
+}
+function visitRow(v, showPatient = true) {
+  const p = patientOf(v), s = visitSummary(v);
+  return `<div class="li"><div class="li-h click" data-act="openVisit" data-id="${v.id}">
+    <div class="t"><b>${showPatient ? esc(p?.name || 'Unknown patient') + ' · ' : ''}${esc(v.type)}</b>
+      <span class="small muted">${fmtDate(v.date)}${s.regs.length ? ' · ' + s.regs.map(esc).join(', ') : ' · no regions yet'}</span>
+      ${s.dx.length ? `<span class="small">${s.dx.map(esc).join(', ')}</span>` : ''}</div>
+    <span class="badge ${v.status === 'Completed' ? 'good' : 'req'}">${esc(v.status)}</span></div></div>`;
+}
+function viewHome() {
+  const t = today();
+  const recent = S.visits.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 6);
+  const latestByPatient = {}; S.visits.forEach(v => { if (!latestByPatient[v.patientId] || v.date > latestByPatient[v.patientId].date) latestByPatient[v.patientId] = v; });
+  const fu = Object.values(latestByPatient).filter(v => v.followUp).sort((a, b) => a.followUp.localeCompare(b.followUp));
+  const inProg = S.visits.filter(v => v.status !== 'Completed').length;
+  const thisWeek = S.visits.filter(v => Math.abs(daysFromToday(v.date)) <= 7 && v.date <= t).length;
+  return `<div class="page-h"><div><div class="crumb">${fmtDate(t)}</div><h2>Dashboard</h2></div>
+      <div class="row"><button class="btn pri" data-act="go" data-v="newvisit">+ New assessment</button></div></div>
+    <div class="dash">
+      <section class="card stack">
+        <div class="sec-h"><h3>Patients</h3><button class="btn sm ghost" data-act="go" data-v="patients">All patients</button></div>
+        <div class="kpi"><div><b>${S.patients.length}</b><span>patients</span></div><div><b>${thisWeek}</b><span>visits in the last 7 days</span></div><div><b>${inProg}</b><span>assessments in progress</span></div></div>
+        <input type="search" id="dq" data-q placeholder="Find a patient by name or phone" value="${esc(S.q)}">
+        <div class="list">${patientMatches().slice(0, 5).map(patientRow).join('') || `<div class="empty">${S.q ? 'No patient matches that search.' : 'No patients yet. Start a new assessment to add the first one.'}</div>`}</div>
+      </section>
+      <section class="card stack">
+        <div class="sec-h"><h3>Recent assessments</h3></div>
+        <div class="list">${recent.map(v => visitRow(v)).join('') || `<div class="empty">Assessments you open or edit appear here.</div>`}</div>
+      </section>
+      <section class="card stack">
+        <div class="sec-h"><h3>Follow-ups</h3><span class="small muted">From each patient’s latest visit</span></div>
+        <div class="list">${fu.map(v => { const p = patientOf(v), d = daysFromToday(v.followUp); return `<div class="li"><div class="li-h click" data-act="openPatient" data-id="${v.patientId}">
+          <div class="t"><b>${esc(p?.name || 'Unknown patient')}</b><span class="small muted">Last seen ${fmtDate(v.date)}</span></div>
+          <div style="text-align:right"><div class="small">${fmtDate(v.followUp)}</div><div class="due ${d < 0 ? 'over' : d <= 3 ? 'soon' : ''}">${d < 0 ? `${-d} days overdue` : d === 0 ? 'Today' : `in ${d} days`}</div></div></div></div>`; }).join('') || `<div class="empty">Set a follow-up date on a visit and it shows up here.</div>`}</div>
+      </section>
+      <section class="card stack">
+        <div class="sec-h"><h3>Templates</h3><button class="btn sm ghost" data-act="go" data-v="builder">Open builder</button></div>
+        <div class="list">${S.cfg.templates.map(tp => `<div class="li"><div class="li-h click" data-act="editTpl" data-id="${tp.id}"><div class="t"><b>${esc(tp.name)}</b><span class="small muted">${tp.items.length} fields · ${tp.rules.length} rules · ${tp.diagnoses.length} diagnoses · ${tp.areas.length ? esc(tp.areas.join(', ')) : 'all body areas'}</span></div></div></div>`).join('') || `<div class="empty">No templates yet.</div>`}</div>
+      </section>
+    </div>`;
+}
+function patientMatches() {
+  const q = S.q.trim().toLowerCase();
+  return S.patients.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).filter(p => !q || (p.name || '').toLowerCase().includes(q) || (p.phone || '').includes(q));
+}
+function patientRow(p) {
+  const vs = S.visits.filter(v => v.patientId === p.id).sort((a, b) => b.date.localeCompare(a.date));
+  return `<div class="li"><div class="li-h click" data-act="openPatient" data-id="${p.id}">
+    <div class="t"><b>${esc(p.name || 'Unnamed')}</b><span class="small muted">${[p.age ? p.age + ' yrs' : '', p.sex, p.phone].filter(Boolean).map(esc).join(' · ') || 'No details yet'}</span></div>
+    <span class="small muted">${vs.length} visit${vs.length === 1 ? '' : 's'}${vs[0] ? ' · ' + fmtDate(vs[0].date) : ''}</span></div></div>`;
+}
+
+/* ----- new assessment ----- */
+function viewNewVisit() {
+  const n = S.newPt ||= {name:'', age:'', sex:'', phone:''};
+  return `<div class="page-h"><div><div class="crumb"><button data-act="go" data-v="home">Dashboard</button> / New assessment</div><h2>New assessment</h2></div></div>
+  <div class="dash">
+    <section class="card stack"><div class="sec-h"><h3>Existing patient</h3></div>
+      <input type="search" id="nq" data-q placeholder="Search by name or phone" value="${esc(S.q)}">
+      <div class="list">${patientMatches().slice(0, 8).map(p => `<div class="li"><div class="li-h"><div class="t"><b>${esc(p.name)}</b><span class="small muted">${[p.age ? p.age + ' yrs' : '', p.phone].filter(Boolean).map(esc).join(' · ')}</span></div><button class="btn sm pri" data-act="startVisit" data-id="${p.id}">Start visit</button></div></div>`).join('') || `<div class="empty">${S.patients.length ? 'No match. Add them as a new patient.' : 'No patients yet.'}</div>`}</div>
+    </section>
+    <section class="card stack"><div class="sec-h"><h3>New patient</h3></div>
+      <label class="f"><span>Full name *</span><input type="text" id="np_name" data-np="name" value="${esc(n.name)}" autocomplete="off"></label>
+      <div class="grid2">
+        <label class="f"><span>Age</span><input type="number" id="np_age" data-np="age" value="${esc(n.age)}" inputmode="numeric" min="0" max="120"></label>
+        <label class="f"><span>Sex</span><select id="np_sex" data-np="sex"><option value=""></option>${['Male','Female'].map(o => `<option ${n.sex === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
+      </div>
+      <label class="f"><span>Phone</span><input type="tel" id="np_phone" data-np="phone" value="${esc(n.phone)}"></label>
+      <div><button class="btn pri" data-act="createPatient">Create patient and start visit</button></div>
+      <div class="small muted">You can add contact details and history on the patient profile later.</div>
+    </section>
+  </div>`;
+}
+function newVisitFor(p, fromVisit) {
+  const v = {id:uid('v'), patientId:p.id, date:today(), clinician:S.cfg.clinic.therapist || '', type:fromVisit ? 'Follow-up' : (S.visits.some(x => x.patientId === p.id) ? 'Follow-up' : 'Initial assessment'), status:'In progress', followUp:'', notes:'',
+    assessment:{regions:(fromVisit?.assessment.regions || []).map(r => ({id:uid('rg'), area:r.area, side:r.side, templateId:r.templateId, answers:{}, confirmed:{}, notes:'', attachments:[]}))},
+    treatment:{status:'not-started'}, createdAt:Date.now(), updatedAt:Date.now()};
+  queueSave('visits', v, 0); return v;
+}
+
+/* ----- patients ----- */
+function viewPatients() {
+  return `<div class="page-h"><div><h2>Patients</h2></div><button class="btn pri" data-act="go" data-v="newvisit">+ New assessment</button></div>
+    <div class="stack"><input type="search" id="pq" data-q placeholder="Find a patient by name or phone" value="${esc(S.q)}" style="max-width:420px">
+    ${S.mode === 'local' ? `<div class="alert info">Patients are saved in this browser only.</div>` : ''}
+    <div class="list">${patientMatches().map(patientRow).join('') || `<div class="empty">${S.q ? 'No patient matches that search.' : 'No patients yet.'}</div>`}</div></div>`;
+}
+function viewPatient() {
+  const p = S.patient; if (!p) return '';
+  const vs = S.visits.filter(v => v.patientId === p.id).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt - a.createdAt));
+  const fld = (k, l, type = 'text', extra = '') => `<label class="f"><span>${l}</span><input type="${type}" id="pt_${k}" data-pt="${k}" value="${esc(p[k])}" ${extra}></label>`;
+  const area = (k, l, ph) => `<label class="f"><span>${l}</span><textarea id="pt_${k}" data-pt="${k}" rows="2" placeholder="${ph}">${esc(p[k])}</textarea></label>`;
+  return `<div class="page-h"><div><div class="crumb"><button data-act="go" data-v="patients">Patients</button> / ${esc(p.name)}</div><h2>${esc(p.name || 'Unnamed patient')}</h2>
+      <div class="small muted">${[p.age ? p.age + ' yrs' : '', p.sex, `Registered ${fmtDate(p.registered)}`].filter(Boolean).map(esc).join(' · ')}</div></div>
+    <div class="row"><button class="btn pri" data-act="startVisit" data-id="${p.id}">+ New visit</button>${vs[0]?.assessment.regions.length ? `<button class="btn" data-act="followUp" data-id="${vs[0].id}">Follow-up from last visit</button>` : ''}</div></div>
+  <div class="dash">
+    <section class="card stack"><div class="sec-h"><h3>Profile</h3></div>
+      ${fld('name', 'Full name')}
+      <div class="grid2">${fld('age', 'Age', 'number', 'inputmode="numeric"')}
+        <label class="f"><span>Sex</span><select id="pt_sex" data-pt="sex"><option value=""></option>${['Male','Female'].map(o => `<option ${p.sex === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
+        ${fld('dob', 'Date of birth', 'date')}${fld('registered', 'Registration date', 'date')}</div>
+      <div class="fh" style="margin-top:4px">Contact</div>
+      <div class="grid2">${fld('phone', 'Phone', 'tel')}${fld('email', 'Email', 'email')}</div>
+      ${fld('address', 'Address')}
+      <div class="grid2">${fld('occupation', 'Occupation')}${fld('referral', 'Referred by')}</div>
+    </section>
+    <section class="card stack"><div class="sec-h"><h3>History</h3></div>
+      ${area('pmh', 'Past medical history', 'Conditions, previous injuries')}
+      ${area('surgery', 'Surgical history', 'Operations and dates')}
+      ${area('meds', 'Medications', '')}
+      ${area('notes', 'Other notes', 'Lifestyle, sport, work demands')}
+    </section>
+    <section class="card stack" style="grid-column:1/-1"><div class="sec-h"><h3>Visits</h3><span class="small muted">${vs.length}</span></div>
+      <div class="list">${vs.map(v => `<div class="li"><div class="li-h">
+        <div class="t click" data-act="openVisit" data-id="${v.id}" style="cursor:pointer"><b>${fmtDate(v.date)} · ${esc(v.type)}</b><span class="small muted">${visitSummary(v).regs.map(esc).join(', ') || 'No regions'}${v.clinician ? ' · ' + esc(v.clinician) : ''}</span>${visitSummary(v).dx.length ? `<span class="small">${visitSummary(v).dx.map(esc).join(', ')}</span>` : ''}</div>
+        <span class="badge ${v.status === 'Completed' ? 'good' : 'req'}">${esc(v.status)}</span>
+        <button class="btn sm" data-act="openVisit" data-id="${v.id}">Open</button><button class="btn sm" data-act="openReport" data-id="${v.id}">Report</button>
+        ${delBtn('v' + v.id, 'delVisit', `data-id="${v.id}"`)}</div></div>`).join('') || `<div class="empty">No visits yet.</div>`}</div>
+    </section>
+  </div>
+  <div class="row" style="margin-top:16px">${delBtn('p' + p.id, 'delPatient', `data-id="${p.id}"`).replace('>Delete<', '>Delete patient and all visits<')}</div>`;
+}
+
+/* ----- visit / assessment ----- */
+function curRegion() { const v = S.visit; return v?.assessment.regions.find(r => r.id === S.regionId) || v?.assessment.regions[0]; }
+function answered(id, reg = curRegion()) { const v = reg?.answers?.[id]; return !(v === undefined || v === '' || (Array.isArray(v) && !v.length)); }
+function viewVisit() {
+  const v = S.visit, p = patientOf(v) || {name:'Preview patient'}, reg = curRegion();
+  const preview = v._preview;
+  return `<div class="page-h"><div><div class="crumb">${preview ? `<button data-act="go" data-v="builder">Builder</button> / Preview` : `<button data-act="go" data-v="patients">Patients</button> / <button data-act="openPatient" data-id="${v.patientId}">${esc(p.name)}</button> / Visit`}</div>
+      <h2>${preview ? 'Template preview' : esc(p.name)}</h2>${preview ? `<div class="small muted">Nothing here is saved. Rules run exactly as in a real visit.</div>` : ''}</div></div>
+  ${preview ? '' : `<section class="card stack" style="margin-bottom:16px">
+    <div class="grid2">
+      <label class="f"><span>Visit date</span><input type="date" id="vi_date" data-vi="date" value="${esc(v.date)}"></label>
+      <label class="f"><span>Clinician</span><input type="text" id="vi_clin" data-vi="clinician" value="${esc(v.clinician)}"></label>
+      <label class="f"><span>Visit type</span><select id="vi_type" data-vi="type">${VISIT_TYPES.map(o => `<option ${v.type === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
+      <label class="f"><span>Follow-up date</span><input type="date" id="vi_fu" data-vi="followUp" value="${esc(v.followUp)}"></label>
+    </div></section>`}
+  <section class="card stack" style="margin-bottom:16px">
+    <div class="sec-h"><h3>Assessment regions</h3><span class="small muted">Each region keeps its own data</span></div>
+    <div class="regions" role="tablist">${v.assessment.regions.map(r => { const ev = evaluate(tplById(r.templateId), r); return `<button class="region ${r.id === reg?.id ? 'on' : ''}" data-act="region" data-id="${r.id}" role="tab" aria-selected="${r.id === reg?.id}">
+      <b>${esc(regionName(r))}</b><span>${ev.dx.size ? `${ev.dx.size} suggested dx` : `${[...ev.visible].filter(id => answered(id, r)).length} answered`}${ev.warnings.length ? ' · ⚠' : ''}</span></button>`; }).join('')}
+      <button class="region add" data-act="picker">+ Add region</button></div>
+    ${S.picker ? pickerHTML() : ''}
+  </section>
+  ${reg ? regionHTML(reg) : `<div class="empty">Add the first region to start the assessment.</div>`}
+  ${preview ? '' : `<section class="later" style="margin-top:16px"><div class="row between"><h3 style="font-size:15px">Treatment</h3><span class="badge">Coming in the next stage</span></div>
+    <div class="small muted">Treatment is planned separately after the assessment, for the whole visit. This visit already has a place reserved for:</div>
+    <ul>${TREATMENT_LATER.map(t => `<li>${t}</li>`).join('')}</ul></section>
+  <section class="card stack" style="margin-top:16px"><div class="sec-h"><h3>General visit notes</h3></div>
+    <textarea id="vi_notes" data-vi="notes" rows="3" placeholder="Shown at the end of the report">${esc(v.notes)}</textarea></section>`}
+  <div class="bar"><div class="in">
+    ${preview ? `<button class="btn pri" data-act="go" data-v="builder">Back to builder</button><button class="btn" data-act="resetPreview">Clear answers</button>` :
+    `<button class="btn pri" data-act="openReport" data-id="${v.id}">View report</button>
+    <button class="btn" data-act="toggleDone">${v.status === 'Completed' ? 'Reopen visit' : 'Mark visit complete'}</button>
+    <button class="btn ghost" data-act="openPatient" data-id="${v.patientId}">Patient profile</button>`}
+  </div></div>`;
+}
+function pickerHTML() {
+  const pk = S.picker, groups = [...new Set(S.cfg.bodyAreas.map(a => a.group || 'Other'))];
+  const area = pk.custom.trim() || pk.area;
+  return `<div class="picker">
+    <div class="row between"><b>Choose a body area</b><button class="btn sm ghost" data-act="closePicker">Cancel</button></div>
+    ${groups.map(g => `<div class="pgroup"><span class="small muted">${esc(g)}</span><div class="chips">${S.cfg.bodyAreas.filter(a => (a.group || 'Other') === g).map(a => `<button class="chip sm ${pk.area === a.name && !pk.custom ? 'on' : ''}" data-act="pickArea" data-v="${esc(a.name)}">${esc(a.name)}</button>`).join('')}</div></div>`).join('')}
+    <label class="f" style="max-width:320px"><span>Or type another area</span><input type="text" id="pk_custom" data-pk="custom" value="${esc(pk.custom)}" placeholder="e.g. Sternoclavicular joint"></label>
+    <div class="pgroup"><span class="small muted">Side</span><div class="chips">${SIDES.map(s => `<button class="chip sm ${pk.side === s ? 'on' : ''}" data-act="pickSide" data-v="${s}">${s}</button>`).join('')}</div></div>
+    ${S.cfg.templates.length > 1 ? `<label class="f" style="max-width:320px"><span>Template</span><select id="pk_tpl" data-pk="templateId">${S.cfg.templates.map(t => `<option value="${t.id}" ${(pk.templateId || tplFor(area)?.id) === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>` : ''}
+    <div><button class="btn pri" data-act="addRegion" ${area ? '' : 'disabled'}>Add ${esc([pk.side !== 'Midline' ? pk.side : '', area].filter(Boolean).join(' ') || 'region')}</button></div>
+  </div>`;
+}
+function regionHTML(reg) {
+  const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg);
+  const counts = PARTS.map(([k]) => { const its = ev.items.filter(i => i.part === k); return [its.filter(i => answered(i.id, reg)).length, its.length]; });
+  const items = ev.items.filter(i => i.part === S.part);
+  const secs = [...(tpl?.sections[S.part] || [])]; items.forEach(i => !secs.includes(i.section) && secs.push(i.section));
+  const prev = S.prevVisible, appeared = id => prev.size && !prev.has(id);
+  S.prevVisible = ev.visible; S.lastVisKey = [...ev.visible].join(',');
+  return `<div class="visit">
+    <div class="stack">
+      <section class="card stack">
+        <div class="row between"><div><h3 style="font-size:18px">${esc(regionName(reg))}</h3><div class="small muted">${esc(tpl?.name || 'No template')}</div></div>
+          <div class="row" style="gap:6px"><select id="rg_side_${reg.id}" data-rg="side" aria-label="Side" style="width:auto">${SIDES.map(s => `<option ${reg.side === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+          ${delBtn('rg' + reg.id, 'delRegion', `data-id="${reg.id}"`).replace('>Delete<', '>Remove region<')}</div></div>
+        <div class="soap" role="tablist">${PARTS.map(([k, l], i) => `<button class="${S.part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="part" data-v="${k}" role="tab"><i>${k}</i>${l}<small class="muted">${counts[i][0]}/${counts[i][1]}</small></button>`).join('')}</div>
+      </section>
+      ${S.part === 'A' ? autoFindingsHTML(reg, ev, tpl) : ''}
+      ${secs.map(sec => { const its = items.filter(i => i.section === sec); if (!its.length) return '';
+        return `<section class="card"><div class="sec-h"><h3>${esc(sec)}</h3><span class="small muted">${its.filter(i => answered(i.id, reg)).length}/${its.length}</span></div>${its.map(it => qHTML(it, reg, ev, appeared(it.id))).join('')}</section>`; }).join('') || (S.part === 'A' ? '' : `<div class="empty">No fields in ${PARTS.find(p => p[0] === S.part)[1]} for this area.</div>`)}
+      ${S.part === 'A' ? `<section class="card stack"><div class="sec-h"><h3>Clinician notes for ${esc(regionName(reg))}</h3></div><textarea id="rg_notes_${reg.id}" data-rg="notes" rows="3">${esc(reg.notes)}</textarea></section>` : ''}
+      ${S.part === 'O' ? `<div class="later"><div class="row between"><b class="small">Attachments & images</b><span class="badge">Later</span></div><span class="small muted">Photos, imaging and documents for this region will attach here.</span></div>` : ''}
+      ${S.part === 'P' ? `<div class="later"><span class="small muted">Treatment details (goals, exercises, modalities, frequency, home program) are planned for the whole visit in the Treatment step below, not inside each region.</span></div>` : ''}
+      <div class="row between">${S.part !== 'S' ? `<button class="btn" data-act="part" data-v="${PARTS[PARTS.findIndex(p => p[0] === S.part) - 1][0]}">← ${PARTS[PARTS.findIndex(p => p[0] === S.part) - 1][1]}</button>` : '<span></span>'}${S.part !== 'P' ? `<button class="btn" data-act="part" data-v="${PARTS[PARTS.findIndex(p => p[0] === S.part) + 1][0]}">${PARTS[PARTS.findIndex(p => p[0] === S.part) + 1][1]} →</button>` : ''}</div>
+    </div>
+    <aside class="card rail stack" id="rail">${railHTML(reg, ev, tpl)}</aside>
+  </div>`;
+}
+function autoFindingsHTML(reg, ev, tpl) {
+  return `<section class="card stack"><div class="sec-h"><h3>From the rules</h3><span class="small muted">Updates as you answer</span></div>
+    ${ev.warnings.map(w => `<div class="alert warn"><span aria-hidden="true">⚠</span><span>${esc(w)}</span></div>`).join('')}
+    <div class="stack" style="gap:6px"><span class="fh">Clinical findings</span>${ev.findings.length ? ev.findings.map(f => `<div class="finding">${esc(f)}</div>`).join('') : `<span class="small muted">None yet.</span>`}</div>
+    <div class="stack" style="gap:6px"><span class="fh">Suggested diagnoses</span>${dxHTML(reg, ev, tpl)}</div></section>`;
+}
+function dxHTML(reg, ev, tpl) {
+  const dxs = [...ev.dx.entries()].map(([id, d]) => ({d:tpl.diagnoses.find(x => x.id === id), rules:d.rules})).filter(x => x.d);
+  return dxs.length ? dxs.map(({d, rules}) => { const ok = reg.confirmed?.[d.id]; return `<div class="dx ${ok ? 'ok' : ''}">
+    <div class="dx-n"><span>${esc(d.name)}</span>${d.code ? `<span class="code">${esc(d.code)}</span>` : ''}</div>
+    <div class="why">Because ${rules.map(r => esc(ruleText(tpl, r))).join('; ')}</div>
+    <label class="check small"><input type="checkbox" id="cf_${reg.id}_${d.id}" data-act="confirm" data-id="${d.id}" ${ok ? 'checked' : ''}> Confirmed by clinician</label></div>`; }).join('')
+    : `<span class="small muted">None yet. Suggestions appear when their criteria are met.</span>`;
+}
+function railHTML(reg, ev, tpl) {
+  const req = [...ev.required], done = req.filter(id => answered(id, reg)).length;
+  const missing = req.filter(id => !answered(id, reg)).map(id => tpl.items.find(i => i.id === id)).filter(Boolean);
+  return `<div class="fh" style="color:var(--ink)">${esc(regionName(reg))}</div>
+    <div><div class="row between"><span class="small">Required fields</span><span class="small muted">${done}/${req.length}</span></div>
+      <div class="meter" style="margin-top:6px"><i style="width:${req.length ? done / req.length * 100 : 100}%"></i></div>
+      ${missing.length ? `<div class="small muted" style="margin-top:6px">Missing: ${missing.slice(0, 4).map(i => `<a href="#" data-act="jump" data-v="${i.part}">${esc(i.label)}</a>`).join(', ')}${missing.length > 4 ? '…' : ''}</div>` : ''}</div>
+    ${ev.warnings.length ? `<div class="stack" style="gap:6px"><span class="fh">Warnings</span>${ev.warnings.map(w => `<div class="alert warn"><span aria-hidden="true">⚠</span><span>${esc(w)}</span></div>`).join('')}</div>` : ''}
+    ${ev.findings.length ? `<div class="stack" style="gap:6px"><span class="fh">Clinical findings</span>${ev.findings.map(f => `<div class="finding small">${esc(f)}</div>`).join('')}</div>` : ''}
+    <div class="stack" style="gap:6px"><span class="fh">Suggested diagnoses</span>${dxHTML(reg, ev, tpl)}</div>`;
+}
+function qHTML(it, reg, ev, appear) {
+  const v = reg.answers[it.id], req = ev.required.has(it.id), ida = `a_${reg.id}_${it.id}`;
+  let input = '';
+  if (['yesno','choice','test'].includes(it.type)) {
+    const tone = o => it.type === 'test' ? (/^pos/i.test(o) ? 'pos' : /^neg/i.test(o) ? 'neg' : 'eq') : '';
+    input = `<div class="chips" role="radiogroup">${optionsOf(it).map(o => `<button class="chip ${tone(o)} ${v === o ? 'on' : ''}" data-act="ans" data-id="${it.id}" data-v="${esc(o)}" aria-pressed="${v === o}">${esc(o)}</button>`).join('')}</div>`;
+  } else if (it.type === 'checklist') {
+    const arr = Array.isArray(v) ? v : [];
+    input = `<div class="chips">${optionsOf(it).map(o => `<button class="chip ${arr.includes(o) ? 'on' : ''}" data-act="ansm" data-id="${it.id}" data-v="${esc(o)}" aria-pressed="${arr.includes(o)}">${arr.includes(o) ? '✓ ' : ''}${esc(o)}</button>`).join('')}</div>`;
+  } else if (it.type === 'scale') {
+    const col = n => n <= 3 ? 'var(--good)' : n <= 6 ? 'var(--warn)' : 'var(--bad)';
+    input = `<div class="nprs">${Array.from({length:11}, (_, n) => `<button data-act="ans" data-id="${it.id}" data-v="${n}" class="${String(v) === String(n) ? 'on' : ''}" style="${String(v) === String(n) ? `background:${col(n)}` : `border-bottom:3px solid ${col(n)}`}" aria-label="${n}">${n}</button>`).join('')}</div><div class="nprs-l"><span>No pain</span><span>Worst imaginable</span></div>`;
+  } else if (it.type === 'number' || it.type === 'measurement') {
+    const nrm = parseFloat(it.normal), val = parseFloat(v), pct = !isNaN(nrm) && nrm > 0 && !isNaN(val) ? Math.max(0, Math.min(100, val / nrm * 100)) : null;
+    input = `<div class="num"><input type="number" inputmode="decimal" id="${ida}" data-ans="${it.id}" value="${esc(v ?? '')}">${it.unit ? `<span>${esc(it.unit)}</span>` : ''}
+      ${it.type === 'measurement' && it.normal !== '' && it.normal != null ? `<span class="small muted">normal ${esc(it.normal)}${esc(it.unit)}</span>${pct !== null ? `<span class="meas-bar" title="${Math.round(pct)}% of normal"><i style="width:${pct}%"></i></span>` : ''}` : ''}</div>`;
+  } else if (it.type === 'short') {
+    input = `<input type="text" id="${ida}" data-ans="${it.id}" value="${esc(v ?? '')}">`;
+  } else {
+    input = `<textarea id="${ida}" data-ans="${it.id}" rows="2">${esc(v ?? '')}</textarea>`;
+  }
+  return `<div class="q ${appear ? 'appear' : ''}">
+    <div class="q-h"><div class="q-l">${esc(it.label)}${req ? ` <span class="star" title="Required">*</span>` : ''}${it.unit && it.type === 'choice' ? ` <span class="muted small">(${esc(it.unit)})</span>` : ''}</div>
+      <div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}</div></div>
+    ${it.help ? `<div class="help">${esc(it.help)}</div>` : ''}${input}</div>`;
+}
+
+/* ----- report ----- */
+function valText(it, v) {
+  if (Array.isArray(v)) return v.join(', ');
+  if (['measurement','number','scale'].includes(it.type) || (it.type === 'choice' && it.unit)) return `${v}${it.unit ? (it.unit === '°' ? '°' : ' ' + it.unit) : ''}${it.type === 'measurement' && it.normal !== '' && it.normal != null ? ` (normal ${it.normal}${it.unit})` : ''}`;
+  return String(v);
+}
+function regionReport(reg, n) {
+  const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg), ans = reg.answers || {};
+  const part = k => {
+    const its = ev.items.filter(i => i.part === k && answered(i.id, reg));
+    const secs = [...(tpl.sections[k] || [])]; its.forEach(i => !secs.includes(i.section) && secs.push(i.section));
+    const body = secs.map(s => { const x = its.filter(i => i.section === s); return x.length ? `<h4>${esc(s)}</h4><table>${x.map(i => { const val = ans[i.id], cls = i.type === 'test' ? (/^pos/i.test(val) ? 'pos' : /^neg/i.test(val) ? 'neg' : '') : ''; return `<tr><th>${esc(i.label)}</th><td class="${cls}">${esc(valText(i, val)).replace(/\n/g, '<br>')}</td></tr>`; }).join('')}</table>` : ''; }).join('');
+    return body;
+  };
+  const dxs = [...ev.dx.entries()].map(([id, d]) => ({d:tpl.diagnoses.find(x => x.id === id), rules:d.rules})).filter(x => x.d);
+  const S_ = part('S'), O_ = part('O'), A_ = part('A'), P_ = part('P');
+  return `<div class="reg"><h2>${n}. ${esc(regionName(reg))}</h2>
+    ${S_ ? `<div class="avoid"><h3>Subjective</h3>${S_}</div>` : ''}
+    ${O_ ? `<div><h3>Objective</h3>${O_}</div>` : ''}
+    <div class="avoid"><h3>Assessment</h3>
+      ${ev.warnings.length ? `<h4>Warnings</h4><ul>${ev.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+      ${ev.findings.length ? `<h4>Clinical findings</h4><ul>${ev.findings.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+      <h4>Diagnosis</h4>${dxs.length ? `<ul>${dxs.map(({d, rules}) => `<li><b>${esc(d.name)}</b>${d.code ? ` <span class="pm">${esc(d.code)}</span>` : ''}<span class="tag">${reg.confirmed?.[d.id] ? 'Confirmed by clinician' : 'Suggested'}</span><div class="pm" style="font-size:11.5px">Based on: ${rules.map(r => esc(ruleText(tpl, r))).join('; ')}</div></li>`).join('')}</ul>` : `<div class="pm">No suggested diagnosis from the findings.</div>`}
+      ${A_}
+      ${reg.notes ? `<h4>Clinician notes</h4><div class="note">${esc(reg.notes).replace(/\n/g, '<br>')}</div>` : ''}</div>
+    ${P_ ? `<div class="avoid"><h3>Plan</h3>${P_}</div>` : ''}
+  </div>`;
+}
+function reportBody(v) {
+  const cfg = S.cfg, p = patientOf(v) || {};
+  return `<div class="paper" id="paper">
+    <div class="ph-h"><div><h1>Physiotherapy Assessment Report</h1><div class="pm">${esc(cfg.clinic.name || '')}</div></div>
+      <div class="pm" style="text-align:right">${fmtDate(v.date)}<br>${esc(v.type)}</div></div>
+    <h2>Patient</h2>
+    <table><tr><th>Name</th><td>${esc(p.name || '—')}</td></tr>
+      ${p.age ? `<tr><th>Age</th><td>${esc(p.age)}</td></tr>` : ''}${p.sex ? `<tr><th>Sex</th><td>${esc(p.sex)}</td></tr>` : ''}
+      ${p.occupation ? `<tr><th>Occupation</th><td>${esc(p.occupation)}</td></tr>` : ''}
+      ${p.pmh ? `<tr><th>Past medical history</th><td>${esc(p.pmh)}</td></tr>` : ''}${p.surgery ? `<tr><th>Surgical history</th><td>${esc(p.surgery)}</td></tr>` : ''}${p.meds ? `<tr><th>Medications</th><td>${esc(p.meds)}</td></tr>` : ''}
+      <tr><th>Regions assessed</th><td>${v.assessment.regions.map(r => esc(regionName(r))).join(', ') || '—'}</td></tr></table>
+    ${v.assessment.regions.map((r, i) => regionReport(r, i + 1)).join('')}
+    ${v.notes ? `<div class="avoid"><h2>General notes</h2><div class="note">${esc(v.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
+    ${v.followUp ? `<p><b>Next review:</b> ${fmtDate(v.followUp)}</p>` : ''}
+    <div class="sig avoid"><div>Clinician: ${esc(v.clinician || cfg.clinic.therapist || '')}</div><div>Signature</div></div>
+    <div class="disc">Suggested diagnoses are generated from the assessment rules and require clinical confirmation.</div>
+  </div>`;
+}
+function viewReport() {
+  const v = S.visits.find(x => x.id === S.route.id) || S.visit; if (!v) return '';
+  return `<div class="row noprint" style="margin-top:16px"><button class="btn" data-act="openVisit" data-id="${v.id}">Back to visit</button>
+    <button class="btn pri" data-act="pdf" data-id="${v.id}" id="pdfbtn">Download PDF</button>
+    ${S.dl ? '' : `<button class="btn" data-act="print">Print</button>`}
+    <button class="btn" data-act="copyRep">Copy as text</button></div>
+    <div class="paper-wrap">${reportBody(v)}</div>`;
+}
+
+/* ----- builder ----- */
+const mvBtns = (attrs, upOk, downOk) => `<div class="mv"><button class="icon" data-act="mv" ${attrs} data-d="-1" ${upOk ? '' : 'disabled'} aria-label="Move up">▲</button><button class="icon" data-act="mv" ${attrs} data-d="1" ${downOk ? '' : 'disabled'} aria-label="Move down">▼</button></div>`;
+const delBtn = (key, act, attrs) => `<button class="btn sm danger ${S.arm === key ? 'arm' : ''}" data-act="${act}" ${attrs}>${S.arm === key ? 'Sure? Tap again' : 'Delete'}</button>`;
+function viewBuilder() {
+  if (!S.canAdmin) return `<div class="empty" style="margin-top:16px">You can use assessments, but only the page owner and editors can change templates.</div>`;
+  const ti = S.cfg.templates.findIndex(t => t.id === S.tplId), tpl = S.cfg.templates[ti];
+  if (!tpl) return `<div class="page-h"><h2>Templates & builder</h2></div><div class="empty">No templates. <button class="btn sm pri" data-act="newTpl">+ New template</button></div>`;
+  const P = `templates.${ti}`;
+  return `<div class="page-h"><div><h2>Templates & builder</h2><div class="small muted">Changes save automatically and apply to new answers straight away.</div></div>
+      <div class="row"><button class="btn" data-act="preview">Preview template</button></div></div>
+    <div class="stack">
+      <div class="row">${S.cfg.templates.map(t => `<button class="pill-t ${t.id === tpl.id ? 'on' : ''}" data-act="pickTpl" data-id="${t.id}">${esc(t.name)}</button>`).join('')}
+        <button class="btn sm" data-act="newTpl">+ New template</button><button class="btn sm" data-act="dupTpl">Duplicate</button></div>
+      <section class="card stack">
+        <div class="grid2"><label class="f"><span>Template name</span><input type="text" id="${P}.name" data-b="${P}.name" value="${esc(tpl.name)}"></label></div>
+        <div class="stack" style="gap:6px"><span class="small muted" style="font-weight:600">Used by default for these body areas (none = any area)</span>
+          <div class="chips">${S.cfg.bodyAreas.map(a => `<button class="chip sm ${tpl.areas.includes(a.name) ? 'on' : ''}" data-act="tplArea" data-v="${esc(a.name)}">${esc(a.name)}</button>`).join('')}</div></div>
+        ${S.cfg.templates.length > 1 ? `<div>${delBtn('tpl' + tpl.id, 'delTpl', '').replace('>Delete<', '>Delete template<')}</div>` : ''}
+      </section>
+      <div class="pills" role="tablist">${[['fields', `Fields (${tpl.items.length})`], ['rules', `Rules (${tpl.rules.length})`], ['dx', `Diagnoses (${tpl.diagnoses.length})`]].map(([k, l]) => `<button class="pill-t ${S.btab === k ? 'on' : ''}" data-act="btab" data-v="${k}">${l}</button>`).join('')}</div>
+      ${S.btab === 'fields' ? bFields(tpl, ti) : S.btab === 'rules' ? bRules(tpl, ti) : bDx(tpl, ti)}
+    </div>`;
+}
+function bFields(tpl, ti) {
+  const part = S.bpart, secs = tpl.sections[part], P = `templates.${ti}`;
+  const ev = evaluate(tpl, null);
+  const idxs = tpl.items.map((it, i) => [it, i]).filter(([it]) => it.part === part);
+  const orphans = idxs.filter(([it]) => !secs.includes(it.section));
+  const itemRow = ([it, i], list, k) => { const open = S.open === it.id; return `<div class="li ${open ? 'open' : ''}"><div class="li-h">${mvBtns(`data-k="item" data-i="${i}"`, k > 0, k < list.length - 1)}
+      <div class="t"><b>${esc(it.label || 'Untitled')}</b><div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : `<span class="badge">${TYPES[it.type]}</span>`}${it.areas?.length ? `<span class="badge">${esc(it.areas.join(', '))}</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}${it.required ? `<span class="badge req">Required</span>` : ''}</div></div>
+      <button class="btn sm" data-act="toggle" data-id="${it.id}">${open ? 'Close' : 'Edit'}</button></div>${open ? itemEditor(tpl, ti, it, i) : ''}</div>`; };
+  return `<div class="stack">
+    <div class="soap" style="max-width:560px">${PARTS.map(([k, l]) => `<button class="${part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="bpart" data-v="${k}"><i>${k}</i>${l}<small class="muted">${tpl.items.filter(i => i.part === k).length} fields</small></button>`).join('')}</div>
+    ${secs.map((sec, si) => { const its = idxs.filter(([it]) => it.section === sec); return `<div class="sec-block">
+      <div class="sec-title">${mvBtns(`data-k="sec" data-i="${si}"`, si > 0, si < secs.length - 1)}<input type="text" id="${P}.sections.${part}.${si}" data-b="${P}.sections.${part}.${si}" data-rename="${esc(sec)}" value="${esc(sec)}" aria-label="Section name"><span class="small muted" style="flex:1">${its.length} fields</span>${delBtn('sec' + part + si, 'delSec', `data-i="${si}"`)}</div>
+      <div class="list">${its.map((x, k) => itemRow(x, its, k)).join('') || `<span class="small muted">No fields in this section.</span>`}</div>
+      <div class="addbar">${Object.entries(TYPES).map(([k, l]) => `<button class="btn sm ghost" data-act="addItem" data-t="${k}" data-sec="${esc(sec)}">+ ${l}</button>`).join('')}</div></div>`; }).join('')}
+    ${orphans.length ? `<div class="sec-block"><b class="small">Fields without a section</b><div class="list">${orphans.map((x, k) => itemRow(x, orphans, k)).join('')}</div></div>` : ''}
+    <div class="row"><input type="text" id="newsec" placeholder="New section in ${PARTS.find(p => p[0] === part)[1]}" style="max-width:300px"><button class="btn sm" data-act="addSec">+ Add section</button></div>
+  </div>`;
+}
+function itemEditor(tpl, ti, it, i) {
+  const p = `templates.${ti}.items.${i}`;
+  const usedIn = tpl.rules.filter(r => r.actions?.some(a => a.target === it.id) || r.groups?.some(g => g.conds.some(c => c.item === it.id)));
+  return `<div class="li-b">
+    <label class="f"><span>${it.type === 'test' ? 'Test name' : 'Label'}</span><input type="text" id="${p}.label" data-b="${p}.label" value="${esc(it.label)}"></label>
+    <div class="grid2">
+      <label class="f"><span>Type</span><select id="${p}.type" data-b="${p}.type" data-rr="1">${Object.entries(TYPES).map(([k, l]) => `<option value="${k}" ${it.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="f"><span>Part</span><select id="${p}.part" data-b="${p}.part" data-rr="1">${PARTS.map(([k, l]) => `<option value="${k}" ${it.part === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="f"><span>Section</span><select id="${p}.section" data-b="${p}.section" data-rr="1">${tpl.sections[it.part].map(s => `<option ${it.section === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}${tpl.sections[it.part].includes(it.section) ? '' : `<option selected value="${esc(it.section)}">${esc(it.section || '—')}</option>`}</select></label>
+      ${['number','measurement','scale','choice'].includes(it.type) ? `<label class="f"><span>Unit</span><input type="text" id="${p}.unit" data-b="${p}.unit" value="${esc(it.unit)}" placeholder="°, cm, /5, %"></label>` : ''}
+      ${it.type === 'measurement' ? `<label class="f"><span>Normal value</span><input type="text" id="${p}.normal" data-b="${p}.normal" value="${esc(it.normal)}" placeholder="e.g. 135"></label>` : ''}
+    </div>
+    ${['choice','checklist','test'].includes(it.type) ? `<label class="f"><span>Options (one per line)</span><textarea id="${p}.options" data-b="${p}.options" data-t="lines" rows="4">${esc((it.options || []).join('\n'))}</textarea></label>` : ''}
+    <label class="f"><span>${it.type === 'test' ? 'How to perform' : 'Hint'}</span><textarea id="${p}.help" data-b="${p}.help" rows="2">${esc(it.help)}</textarea></label>
+    <div class="stack" style="gap:6px"><span class="small muted" style="font-weight:600">Only for these body areas (none = all)</span><div class="chips">${S.cfg.bodyAreas.map(a => `<button class="chip sm ${it.areas?.includes(a.name) ? 'on' : ''}" data-act="itemArea" data-i="${i}" data-v="${esc(a.name)}">${esc(a.name)}</button>`).join('')}</div></div>
+    <label class="check"><input type="checkbox" id="${p}.required" data-b="${p}.required" data-t="bool" ${it.required ? 'checked' : ''}> Required</label>
+    ${usedIn.length ? `<div class="small muted">Used in rules: ${usedIn.map(r => esc(r.name)).join(', ')}</div>` : ''}
+    <div class="row"><button class="btn sm" data-act="ruleFor" data-id="${it.id}">+ Rule that shows this</button><button class="btn sm" data-act="dupItem" data-i="${i}">Duplicate</button>${delBtn('it' + it.id, 'delItem', `data-i="${i}"`)}</div>
+  </div>`;
+}
+function valueInput(tpl, c, path, idp) {
+  const it = itemIn(tpl, c.item);
+  if (['answered','empty'].includes(c.op)) return `<span></span>`;
+  if (it && ['yesno','choice','checklist','test'].includes(it.type)) return `<select id="${idp}v" data-b="${path}.value"><option value=""></option>${optionsOf(it).map(o => `<option ${c.value === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  return `<input type="${it && ['number','measurement','scale'].includes(it.type) ? 'number' : 'text'}" id="${idp}v" data-b="${path}.value" value="${esc(c.value)}" placeholder="Value">`;
+}
+function bRules(tpl, ti) {
+  const warns = validate(tpl), P = `templates.${ti}`;
+  const itemOpts = sel => `<option value="">Select field</option><optgroup label="Region">${PSEUDO().map(i => `<option value="${i.id}" ${sel === i.id ? 'selected' : ''}>${esc(i.label)}</option>`).join('')}</optgroup>${PARTS.map(([k, l]) => `<optgroup label="${l}">${tpl.items.filter(i => i.part === k).map(i => `<option value="${i.id}" ${sel === i.id ? 'selected' : ''}>${esc(i.label)}</option>`).join('')}</optgroup>`).join('')}`;
+  const fieldOpts = sel => `<option value="">Select field</option>${PARTS.map(([k, l]) => `<optgroup label="${l}">${tpl.items.filter(i => i.part === k).map(i => `<option value="${i.id}" ${sel === i.id ? 'selected' : ''}>${esc(i.label)}</option>`).join('')}</optgroup>`).join('')}`;
+  const tog = (path, val) => `<span class="toggle"><button class="${val !== 'or' ? 'on' : ''}" data-act="setv" data-path="${path}" data-v="and">AND</button><button class="${val === 'or' ? 'on' : ''}" data-act="setv" data-path="${path}" data-v="or">OR</button></span>`;
+  return `<div class="stack">
+    ${warns.length ? `<div class="val"><b>Needs review (${warns.length})</b><ul>${warns.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : `<div class="alert info">All rules look valid.</div>`}
+    <div class="row between"><span class="small muted">Rules run inside each region separately. “Region › body area” and “Region › side” let a rule depend on where you are.</span><button class="btn sm pri" data-act="addRule">+ New rule</button></div>
+    ${tpl.rules.map((r, ri) => { const rp = `${P}.rules.${ri}`; return `<div class="rule" id="rule_${r.id}">
+      <div class="rule-h">${mvBtns(`data-k="rule" data-i="${ri}"`, ri > 0, ri < tpl.rules.length - 1)}<input type="text" id="${rp}.name" data-b="${rp}.name" value="${esc(r.name)}" placeholder="Rule name">${delBtn('ru' + r.id, 'delRule', `data-i="${ri}"`)}</div>
+      <div class="rule-b">
+        <div class="row"><span class="kw if">IF</span>${r.groups.length > 1 ? `<span class="small muted">Groups joined by</span>${tog(`${rp}.logic`, r.logic)}` : ''}</div>
+        ${r.groups.map((g, gi) => { const gp = `${rp}.groups.${gi}`; return `${gi > 0 ? `<div class="joiner"><span class="kw if" style="opacity:.75">${r.logic === 'or' ? 'OR' : 'AND'}</span></div>` : ''}
+          <div class="grp"><div class="row between"><span class="small muted">${r.groups.length > 1 ? `Group ${gi + 1} · ` : ''}conditions joined by ${tog(`${gp}.logic`, g.logic)}</span>${r.groups.length > 1 ? `<button class="btn sm ghost" data-act="delGroup" data-r="${ri}" data-g="${gi}">Remove group</button>` : ''}</div>
+          ${g.conds.map((cd, ci) => { const cp = `${gp}.conds.${ci}`, it = itemIn(tpl, cd.item), ops = OPS_BY[it?.type] || Object.keys(OPS), idp = `c_${r.id}_${gi}_${ci}_`; return `<div class="cond">
+            <select id="${idp}i" data-b="${cp}.item" data-rr="1" aria-label="Field">${itemOpts(cd.item)}</select>
+            <select id="${idp}o" data-b="${cp}.op" data-rr="1" aria-label="Comparison">${ops.map(o => `<option value="${o}" ${cd.op === o ? 'selected' : ''}>${OPS[o]}</option>`).join('')}</select>
+            ${valueInput(tpl, cd, cp, idp)}
+            <button class="icon" data-act="delCond" data-r="${ri}" data-g="${gi}" data-c="${ci}" aria-label="Remove condition">✕</button></div>`; }).join('')}
+          <div><button class="btn sm ghost" data-act="addCond" data-r="${ri}" data-g="${gi}">+ Condition</button></div></div>`; }).join('')}
+        <div><button class="btn sm" data-act="addGroup" data-r="${ri}">+ Condition group ( )</button></div>
+        <div class="row" style="margin-top:4px"><span class="kw then">THEN</span></div>
+        ${r.actions.map((a, ai) => { const ap = `${rp}.actions.${ai}`, idp = `a_${r.id}_${ai}_`; let tgt;
+          if (['show','hide','require'].includes(a.type)) tgt = `<select id="${idp}t" data-b="${ap}.target">${fieldOpts(a.target)}</select>`;
+          else if (a.type === 'diagnosis') tgt = `<select id="${idp}t" data-b="${ap}.target"><option value="">Select diagnosis</option>${tpl.diagnoses.map(d => `<option value="${d.id}" ${a.target === d.id ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select>`;
+          else tgt = `<input type="text" id="${idp}x" data-b="${ap}.text" value="${esc(a.text)}" placeholder="${a.type === 'finding' ? 'Finding to record' : 'Warning message'}">`;
+          return `<div class="act"><select id="${idp}y" data-b="${ap}.type" data-rr="1">${Object.entries(ACTS).map(([k, l]) => `<option value="${k}" ${a.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select>${tgt}<button class="icon" data-act="delAct" data-r="${ri}" data-a="${ai}" aria-label="Remove action">✕</button></div>`; }).join('')}
+        <div><button class="btn sm ghost" data-act="addAct" data-r="${ri}">+ Action</button></div>
+        <div class="small muted" style="border-top:1px solid var(--line);padding-top:8px">IF ${esc(ruleText(tpl, r) || '…')} → ${r.actions.map(a => esc(ACTS[a.type])).join(', ') || 'no action'}</div>
+      </div></div>`; }).join('') || `<div class="empty">No rules yet. A rule says IF (condition) THEN (action), e.g. IF “Pain present” equals Yes → Show “Pain intensity”.</div>`}</div>`;
+}
+function bDx(tpl, ti) {
+  return `<div class="stack"><div class="row between"><span class="small muted">Suggested by rules, then confirmed or ignored by the clinician.</span><button class="btn sm pri" data-act="addDx">+ Diagnosis</button></div>
+    <div class="list">${tpl.diagnoses.map((d, i) => { const crit = tpl.rules.filter(r => r.actions?.some(a => a.type === 'diagnosis' && a.target === d.id)); const p = `templates.${ti}.diagnoses.${i}`; return `<div class="li"><div class="li-b" style="border-top:0">
+      <div class="grid2"><label class="f"><span>Diagnosis</span><input type="text" id="${p}.name" data-b="${p}.name" value="${esc(d.name)}"></label>
+      <label class="f"><span>Code (ICD-10)</span><input type="text" id="${p}.code" data-b="${p}.code" value="${esc(d.code)}"></label></div>
+      <div class="small"><b>Criteria:</b> ${crit.length ? crit.map(r => `<a href="#" data-act="gotoRule" data-id="${r.id}">${esc(ruleText(tpl, r))}</a>`).join(' <b>or</b> ') : '<span class="muted">No criteria yet</span>'}</div>
+      <div class="row"><button class="btn sm" data-act="ruleForDx" data-id="${d.id}">+ Criteria rule</button>${delBtn('dx' + d.id, 'delDx', `data-i="${i}"`)}</div></div></div>`; }).join('') || `<div class="empty">No diagnoses yet.</div>`}</div></div>`;
+}
+function viewSettings() {
+  if (!S.canAdmin) return `<div class="empty" style="margin-top:16px">Only the page owner and editors can change settings.</div>`;
+  const c = S.cfg, groups = [...new Set(c.bodyAreas.map(a => a.group || 'Other'))];
+  return `<div class="page-h"><h2>Settings</h2></div><div class="dash">
+    <section class="card stack"><div class="sec-h"><h3>Clinic (shown on reports)</h3></div>
+      <label class="f"><span>Clinic name</span><input type="text" id="cl_n" data-b="clinic.name" value="${esc(c.clinic.name)}"></label>
+      <label class="f"><span>Default clinician</span><input type="text" id="cl_t" data-b="clinic.therapist" value="${esc(c.clinic.therapist)}"></label>
+      <label class="f"><span>Exercise library link (for treatment, later)</span><input type="text" id="cl_u" data-b="clinic.exerciseUrl" value="${esc(c.clinic.exerciseUrl)}"></label></section>
+    <section class="card stack"><div class="sec-h"><h3>Body areas</h3><span class="small muted">Shown in the region picker</span></div>
+      ${groups.map(g => `<div class="pgroup"><span class="small muted">${esc(g)}</span><div class="chips">${c.bodyAreas.map((a, i) => (a.group || 'Other') === g ? `<span class="chip sm" style="display:inline-flex;gap:6px;align-items:center">${esc(a.name)}<button class="icon" style="width:20px;height:20px;border:0" data-act="delArea" data-i="${i}" aria-label="Remove ${esc(a.name)}">✕</button></span>` : '').join('')}</div></div>`).join('')}
+      <div class="grid2"><input type="text" id="na_name" placeholder="Area, e.g. Foot"><input type="text" id="na_group" placeholder="Group, e.g. Lower limb" list="grouplist"><datalist id="grouplist">${groups.map(g => `<option value="${esc(g)}">`).join('')}</datalist></div>
+      <div><button class="btn sm" data-act="addArea">+ Add area</button></div></section>
+    <section class="card stack"><div class="sec-h"><h3>Backup</h3></div>
+      <div class="row"><button class="btn sm" data-act="export">Export templates (JSON)</button><label class="btn sm" for="imp">Import templates</label><input type="file" id="imp" accept="application/json,.json" hidden>
+        ${delBtn('example', 'loadExample', '').replace('>Delete<', '>Reset to example templates<')}</div>
+      <div class="small muted">Import and reset replace all templates, fields, rules and diagnoses. Patients and visits are not touched.</div></section>
+    ${S.user ? `<section class="card stack"><div class="sec-h"><h3>Account</h3></div>
+      <div class="row between"><span class="small muted">Signed in as ${esc(S.user.email)}</span><button class="btn sm" data-act="signOut">Sign out</button></div></section>` : ''}
+  </div>`;
+}
+
+/* ================= events ================= */
+function getPath(o, path) { return path.split('.').reduce((a, k) => a?.[k], o); }
+function setPath(o, path, v) { const ks = path.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; }
+let toastT; function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2600); }
+let armT; function arm(key, fn) { if (S.arm === key) { S.arm = null; fn(); } else { S.arm = key; clearTimeout(armT); armT = setTimeout(() => { S.arm = null; render(); }, 3500); } render(); }
+const TPL = () => S.cfg.templates.find(t => t.id === S.tplId);
+function saveVisit() { queueSave('visits', S.visit); }
+function refreshRegion() {
+  const reg = curRegion(); if (!reg) return;
+  const ev = evaluate(tplById(reg.templateId), reg), key = [...ev.visible].join(',');
+  if (key !== S.lastVisKey) { S.lastVisKey = key; return render(); }
+  const r = $('#rail'); if (r) r.innerHTML = railHTML(reg, ev, tplById(reg.templateId));
+}
+const newRule = (name, conds, actions) => ({id:uid('r'), name, logic:'and', groups:[{logic:'and', conds}], actions});
+function addRuleAndGo(rule) { TPL().rules.push(rule); touch(); S.btab = 'rules'; render(); setTimeout(() => $('#rule_' + rule.id)?.scrollIntoView({block:'start', behavior:'smooth'}), 30); }
+function sameGroupNeighbor(arr, i, d, key) { let j = i + d; while (j >= 0 && j < arr.length && key(arr[j]) !== key(arr[i])) j += d; return j >= 0 && j < arr.length ? j : -1; }
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, d = b.dataset, tpl = TPL();
+  if (a !== 'confirm' && b.tagName !== 'INPUT') e.preventDefault();
+  switch (a) {
+    case 'signIn': try { await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); } catch { toast('Sign-in didn’t complete, try again'); } break;
+    case 'signOut': await firebase.auth().signOut(); break;
+    case 'go': if (d.v === 'patients' || d.v === 'newvisit') S.q = ''; go(d.v); break;
+    case 'openPatient': go('patient', d.id); break;
+    case 'openVisit': go('visit', d.id); break;
+    case 'openReport': go('report', d.id); break;
+    case 'editTpl': S.tplId = d.id; go('builder'); break;
+    case 'startVisit': { const p = S.patients.find(x => x.id === d.id); if (p) { const v = newVisitFor(p); go('visit', v.id, {visit:v}); } break; }
+    case 'followUp': { const prev = S.visits.find(x => x.id === d.id), p = patientOf(prev); if (p) { const v = newVisitFor(p, prev); go('visit', v.id, {visit:v}); toast('Regions copied from the last visit'); } break; }
+    case 'createPatient': {
+      const n = S.newPt || {}; if (!n.name?.trim()) { toast('Enter the patient’s name first'); $('#np_name')?.focus(); return; }
+      const p = {id:uid('p'), name:n.name.trim(), age:n.age || '', sex:n.sex || '', phone:n.phone || '', email:'', address:'', dob:'', occupation:'', referral:'', registered:today(), pmh:'', surgery:'', meds:'', notes:'', createdAt:Date.now()};
+      queueSave('patients', p, 0); S.newPt = null; const v = newVisitFor(p); go('visit', v.id, {visit:v}); break; }
+    case 'delPatient': arm('p' + d.id, async () => { try { for (const v of S.visits.filter(x => x.patientId === d.id)) await deleteDoc('visits', v.id); await deleteDoc('patients', d.id); S.visits = S.visits.filter(x => x.patientId !== d.id); S.patients = S.patients.filter(x => x.id !== d.id); toast('Patient deleted'); go('patients'); } catch (err) { toast(failMsg(err)); } }); break;
+    case 'delVisit': arm('v' + d.id, async () => { try { await deleteDoc('visits', d.id); S.visits = S.visits.filter(x => x.id !== d.id); toast('Visit deleted'); render(); } catch (err) { toast(failMsg(err)); } }); break;
+    /* visit */
+    case 'region': S.regionId = d.id; S.prevVisible = new Set(); S.lastVisKey = ''; render(); break;
+    case 'part': { S.part = d.v; S.prevVisible = new Set(); render(); const el = $('.soap'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 130; if (window.scrollY > y) window.scrollTo(0, Math.max(0, y)); } break; }
+    case 'jump': S.part = d.v; S.prevVisible = new Set(); render(); break;
+    case 'picker': S.picker = S.picker ? null : {area:'', side:'Right', custom:''}; render(); break;
+    case 'closePicker': S.picker = null; render(); break;
+    case 'pickArea': S.picker.area = d.v; S.picker.custom = ''; S.picker.side = isMidline(d.v) ? 'Midline' : (S.picker.side === 'Midline' ? 'Right' : S.picker.side); S.picker.templateId = ''; render(); break;
+    case 'pickSide': S.picker.side = d.v; render(); break;
+    case 'addRegion': { const pk = S.picker, area = pk.custom.trim() || pk.area; if (!area) return;
+      const r = {id:uid('rg'), area, side:pk.side, templateId:pk.templateId || tplFor(area)?.id, answers:{}, confirmed:{}, notes:'', attachments:[]};
+      S.visit.assessment.regions.push(r); S.regionId = r.id; S.part = 'S'; S.picker = null; S.prevVisible = new Set(); saveVisit(); render(); break; }
+    case 'delRegion': arm('rg' + d.id, () => { const regs = S.visit.assessment.regions; S.visit.assessment.regions = regs.filter(r => r.id !== d.id); S.regionId = S.visit.assessment.regions[0]?.id; saveVisit(); }); break;
+    case 'ans': { const r = curRegion(), cur = r.answers[d.id]; if (String(cur) === d.v) delete r.answers[d.id]; else r.answers[d.id] = d.v; saveVisit(); render(); break; }
+    case 'ansm': { const r = curRegion(), arr = Array.isArray(r.answers[d.id]) ? [...r.answers[d.id]] : []; const k = arr.indexOf(d.v); k < 0 ? arr.push(d.v) : arr.splice(k, 1); r.answers[d.id] = arr; saveVisit(); render(); break; }
+    case 'confirm': { const r = curRegion(); r.confirmed ||= {}; r.confirmed[d.id] = b.checked; saveVisit(); render(); break; }
+    case 'toggleDone': S.visit.status = S.visit.status === 'Completed' ? 'In progress' : 'Completed'; saveVisit(); toast(S.visit.status === 'Completed' ? 'Visit marked complete' : 'Visit reopened'); render(); break;
+    case 'resetPreview': S.visit.assessment.regions.forEach(r => { r.answers = {}; r.confirmed = {}; }); S.prevVisible = new Set(); render(); break;
+    case 'preview': { const area = TPL().areas[0] || 'Knee'; const r = {id:uid('rg'), area, side:isMidline(area) ? 'Midline' : 'Right', templateId:S.tplId, answers:{}, confirmed:{}, notes:''};
+      go('visit', null, {visit:{id:'preview', _preview:true, patientId:null, assessment:{regions:[r]}, notes:'', status:'In progress'}}); break; }
+    /* report */
+    case 'pdf': await makePdf(b, S.visits.find(x => x.id === d.id) || S.visit); break;
+    case 'print': window.print(); break;
+    case 'copyRep': { const t = $('#paper')?.innerText || ''; try { await navigator.clipboard.writeText(t); toast('Report copied'); } catch { const rg = document.createRange(); rg.selectNodeContents($('#paper')); const s = getSelection(); s.removeAllRanges(); s.addRange(rg); toast('Text selected, press copy'); } break; }
+    /* builder */
+    case 'pickTpl': S.tplId = d.id; S.open = null; render(); break;
+    case 'newTpl': { const t = blankTemplate('New template'); S.cfg.templates.push(t); S.tplId = t.id; touch(); render(); break; }
+    case 'dupTpl': { const t = clone(tpl); t.id = uid('tpl'); t.name = tpl.name + ' (copy)'; S.cfg.templates.push(t); S.tplId = t.id; touch(); toast('Template duplicated'); render(); break; }
+    case 'delTpl': arm('tpl' + tpl.id, () => { S.cfg.templates = S.cfg.templates.filter(t => t.id !== tpl.id); S.tplId = S.cfg.templates[0]?.id; touch(); }); break;
+    case 'tplArea': { const k = tpl.areas.indexOf(d.v); k < 0 ? tpl.areas.push(d.v) : tpl.areas.splice(k, 1); touch(); render(); break; }
+    case 'btab': S.btab = d.v; S.open = null; render(); break;
+    case 'bpart': S.bpart = d.v; S.open = null; render(); break;
+    case 'toggle': S.open = S.open === d.id ? null : d.id; render(); break;
+    case 'mv': { const i = +d.i, dir = +d.d;
+      if (d.k === 'item') { const arr = tpl.items, j = sameGroupNeighbor(arr, i, dir, x => x.part + '|' + x.section); if (j < 0) return; [arr[i], arr[j]] = [arr[j], arr[i]]; }
+      else if (d.k === 'sec') { const arr = tpl.sections[S.bpart], j = i + dir; [arr[i], arr[j]] = [arr[j], arr[i]]; }
+      else if (d.k === 'rule') { const arr = tpl.rules, j = i + dir; [arr[i], arr[j]] = [arr[j], arr[i]]; }
+      touch(); render(); break; }
+    case 'addSec': { const v = $('#newsec').value.trim(); if (!v || tpl.sections[S.bpart].includes(v)) return; tpl.sections[S.bpart].push(v); touch(); render(); break; }
+    case 'delSec': arm('sec' + S.bpart + d.i, () => { tpl.sections[S.bpart].splice(+d.i, 1); touch(); }); break;
+    case 'addItem': { const t = d.t, it = {id:uid(t === 'test' ? 't' : 'f'), type:t, label:t === 'test' ? 'New special test' : 'New ' + TYPES[t].toLowerCase(), part:S.bpart, section:d.sec, options:t === 'test' ? ['Positive','Negative','Equivocal'] : ['choice','checklist'].includes(t) ? ['Option 1','Option 2'] : [], unit:t === 'measurement' ? '°' : t === 'scale' ? '/10' : '', normal:'', required:false, areas:[], help:''};
+      let at = -1; tpl.items.forEach((x, k) => { if (x.part === it.part && x.section === it.section) at = k; }); tpl.items.splice(at < 0 ? tpl.items.length : at + 1, 0, it);
+      S.open = it.id; touch(); render(); setTimeout(() => { const i = tpl.items.indexOf(it); const el = document.getElementById(`templates.${S.cfg.templates.indexOf(tpl)}.items.${i}.label`); el?.focus(); el?.select(); el?.scrollIntoView({block:'center'}); }, 20); break; }
+    case 'dupItem': { const src = tpl.items[+d.i], it = Object.assign(clone(src), {id:uid('f'), label:src.label + ' (copy)'}); tpl.items.splice(+d.i + 1, 0, it); S.open = it.id; touch(); render(); break; }
+    case 'delItem': arm('it' + tpl.items[+d.i].id, () => { tpl.items.splice(+d.i, 1); S.open = null; touch(); }); break;
+    case 'itemArea': { const it = tpl.items[+d.i]; it.areas ||= []; const k = it.areas.indexOf(d.v); k < 0 ? it.areas.push(d.v) : it.areas.splice(k, 1); touch(); render(); break; }
+    case 'ruleFor': { const it = tpl.items.find(x => x.id === d.id); addRuleAndGo(newRule('Show “' + it.label + '”', [{item:'', op:'eq', value:''}], [{type:'show', target:it.id}])); break; }
+    case 'addRule': addRuleAndGo(newRule('New rule', [{item:'', op:'eq', value:''}], [{type:'show', target:''}])); break;
+    case 'delRule': arm('ru' + tpl.rules[+d.i].id, () => { tpl.rules.splice(+d.i, 1); touch(); }); break;
+    case 'setv': setPath(S.cfg, d.path, d.v); touch(); render(); break;
+    case 'addCond': tpl.rules[+d.r].groups[+d.g].conds.push({item:'', op:'eq', value:''}); touch(); render(); break;
+    case 'delCond': { const r = tpl.rules[+d.r], g = r.groups[+d.g]; g.conds.splice(+d.c, 1); if (!g.conds.length && r.groups.length > 1) r.groups.splice(+d.g, 1); touch(); render(); break; }
+    case 'addGroup': tpl.rules[+d.r].groups.push({logic:'and', conds:[{item:'', op:'eq', value:''}]}); touch(); render(); break;
+    case 'delGroup': tpl.rules[+d.r].groups.splice(+d.g, 1); touch(); render(); break;
+    case 'addAct': tpl.rules[+d.r].actions.push({type:'show', target:''}); touch(); render(); break;
+    case 'delAct': tpl.rules[+d.r].actions.splice(+d.a, 1); touch(); render(); break;
+    case 'addDx': tpl.diagnoses.push({id:uid('d'), name:'New diagnosis', code:''}); touch(); render(); break;
+    case 'delDx': arm('dx' + tpl.diagnoses[+d.i].id, () => { tpl.diagnoses.splice(+d.i, 1); touch(); }); break;
+    case 'ruleForDx': { const dx = tpl.diagnoses.find(x => x.id === d.id); addRuleAndGo(newRule('Criteria: ' + dx.name, [{item:'', op:'eq', value:''}], [{type:'diagnosis', target:dx.id}])); break; }
+    case 'gotoRule': S.btab = 'rules'; render(); setTimeout(() => $('#rule_' + d.id)?.scrollIntoView({block:'start', behavior:'smooth'}), 30); break;
+    /* settings */
+    case 'addArea': { const n = $('#na_name').value.trim(), g = $('#na_group').value.trim() || 'Other'; if (!n || S.cfg.bodyAreas.some(x => x.name === n)) return; S.cfg.bodyAreas.push({name:n, group:g}); touch(); render(); break; }
+    case 'delArea': S.cfg.bodyAreas.splice(+d.i, 1); touch(); render(); break;
+    case 'loadExample': arm('example', () => { const keep = S.cfg.clinic; S.cfg = normalize(clone(EXAMPLE)); S.cfg.clinic = keep; S.tplId = S.cfg.templates[0].id; touch(); toast('Example templates restored'); }); break;
+    case 'export': {
+      const json = JSON.stringify(S.cfg, null, 2);
+      try { if (S.dl) await S.dl.save({filename:'assessment-templates.json', data:json});
+        else { const u = URL.createObjectURL(new Blob([json], {type:'application/json'})); const l = document.createElement('a'); l.href = u; l.download = 'assessment-templates.json'; l.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
+      } catch (err) { if (err?.code !== 'declined') toast('Export failed'); }
+      break; }
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target, d = t.dataset;
+  if (d.q !== undefined) { S.q = t.value; render(); return; }
+  if (d.np) { (S.newPt ||= {})[d.np] = t.value; return; }
+  if (d.pk) { S.picker[d.pk] = t.value; if (d.pk === 'custom') { clearTimeout(t._t); t._t = setTimeout(render, 300); } return; }
+  if (d.pt && t.tagName !== 'SELECT') { S.patient[d.pt] = t.value; queueSave('patients', S.patient, 900); return; }
+  if (d.vi && t.tagName !== 'SELECT') { S.visit[d.vi] = t.value; saveVisit(); return; }
+  if (d.rg && t.tagName !== 'SELECT') { curRegion()[d.rg] = t.value; saveVisit(); return; }
+  if (d.ans) { curRegion().answers[d.ans] = t.value; saveVisit(); clearTimeout(t._t); t._t = setTimeout(refreshRegion, 350); return; }
+  if (d.b && t.tagName !== 'SELECT' && t.type !== 'checkbox') {
+    let v = t.value; if (d.t === 'lines') v = v.split('\n').map(s => s.trim()).filter(Boolean);
+    if (d.rename !== undefined) { const old = d.rename; TPL()?.items.forEach(i => i.part === S.bpart && i.section === old && (i.section = v)); d.rename = v; }
+    setPath(S.cfg, d.b, v); touch();
+    if (d.b === 'clinic.name') { const h = $('.brand h1'); if (h) h.lastChild.textContent = v || 'Physio Assessment'; }
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target, d = t.dataset;
+  if (t.id === 'imp' && t.files?.[0]) {
+    const fr = new FileReader(); fr.onload = () => { try { const j = JSON.parse(fr.result); if (!Array.isArray(j.templates)) throw 0; const keep = S.cfg.clinic; S.cfg = normalize(j); if (!j.clinic) S.cfg.clinic = keep; S.tplId = S.cfg.templates[0]?.id; touch(); toast('Templates imported'); render(); } catch { toast('That file isn’t a templates export from this app'); } }; fr.readAsText(t.files[0]); t.value = ''; return;
+  }
+  if (d.np && t.tagName === 'SELECT') { (S.newPt ||= {})[d.np] = t.value; return; }
+  if (d.pk && t.tagName === 'SELECT') { S.picker[d.pk] = t.value; return; }
+  if (d.pt && t.tagName === 'SELECT') { S.patient[d.pt] = t.value; queueSave('patients', S.patient); return; }
+  if (d.vi && t.tagName === 'SELECT') { S.visit[d.vi] = t.value; saveVisit(); return; }
+  if (d.vi || d.pt) { render(); return; }
+  if (d.rg && t.tagName === 'SELECT') { curRegion()[d.rg] = t.value; saveVisit(); render(); return; }
+  if (d.ans) { curRegion().answers[d.ans] = t.value; saveVisit(); refreshRegion(); return; }
+  if (d.b && (t.tagName === 'SELECT' || t.type === 'checkbox')) {
+    const v = d.t === 'bool' ? t.checked : t.value; setPath(S.cfg, d.b, v);
+    const tpl = TPL();
+    if (/items\.\d+\.type$/.test(d.b)) { const it = getPath(S.cfg, d.b.replace(/\.type$/, '')); if (['choice','checklist'].includes(v) && !it.options?.length) it.options = ['Option 1', 'Option 2']; if (v === 'test' && !it.options?.length) it.options = ['Positive','Negative','Equivocal']; }
+    if (/items\.\d+\.part$/.test(d.b)) { const it = getPath(S.cfg, d.b.replace(/\.part$/, '')); it.section = tpl.sections[v][0] || ''; S.bpart = v; }
+    if (/conds\.\d+\.item$/.test(d.b)) { const cd = getPath(S.cfg, d.b.replace(/\.item$/, '')); const ops = OPS_BY[itemIn(tpl, v)?.type] || []; if (!ops.includes(cd.op)) cd.op = ops[0] || 'eq'; cd.value = ''; }
+    if (/actions\.\d+\.type$/.test(d.b)) { const ac = getPath(S.cfg, d.b.replace(/\.type$/, '')); ac.target = ''; ac.text = ''; }
+    touch(); if (d.rr || d.t === 'bool') render();
+  }
+});
+
+/* ================= PDF ================= */
+let pdfLib;
+function loadPdfLib() { return pdfLib ||= new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'; s.onload = () => res(window.html2pdf); s.onerror = () => { pdfLib = null; rej(); }; document.head.appendChild(s); }); }
+async function makePdf(btn, v) {
+  const el = $('#paper'); if (!el || !v) return;
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Preparing…';
+  try {
+    const h2p = await loadPdfLib(); await document.fonts?.ready;
+    const name = (patientOf(v)?.name || 'patient').replace(/[^\p{L}\p{N}]+/gu, '-');
+    const opts = {margin:[8, 8, 10, 8], image:{type:'jpeg', quality:0.96}, html2canvas:{scale:2, backgroundColor:'#ffffff', windowWidth:820}, jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}, pagebreak:{mode:['css'], avoid:'.avoid'}};
+    const filename = `${name}-assessment-${v.date}.pdf`;
+    if (S.dl) { const blob = await h2p().set(opts).from(el).outputPdf('blob'); await S.dl.save({filename, data:blob}); }
+    else await h2p().set(Object.assign(opts, {filename})).from(el).save();
+  } catch (err) { if (err?.code !== 'declined') toast('Couldn’t create the PDF, try again'); }
+  btn.disabled = false; btn.textContent = old;
+}
+
+boot();
+</script>
+
+</body>
+</html>
