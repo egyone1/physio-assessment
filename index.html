@@ -211,8 +211,61 @@ input[type=number]{font-variant-numeric:tabular-nums}
 .paper ul{margin:2px 0;padding-left:18px}
 .avoid{break-inside:avoid;page-break-inside:avoid}
 @media (max-width:600px){.paper{padding:22px 16px}.later ul{columns:1}}
-@media print{.top,.bar,.noprint,#toast{display:none!important}html,body{background:#fff}#app{padding:0;max-width:none}.paper-wrap{margin:0}.paper{box-shadow:none;padding:0;max-width:none}}
+@page{size:A4;margin:12mm}
+@media print{.paper tr,.paper li,.paper h2,.paper h3,.paper h4{break-inside:avoid}.paper h2,.paper h3,.paper h4{break-after:avoid}.paper .reg{border:0;padding:0}.top,.bar,.noprint,#toast{display:none!important}html,body{background:#fff}#app{padding:0;max-width:none}.paper-wrap{margin:0}.paper{box-shadow:none;padding:0;max-width:none}}
 @media (prefers-reduced-motion:reduce){.q.appear{animation:none}}
+/* ---- visual refresh ---- */
+:root{--bg:#f3f6f7;--surface-2:#edf2f3;--line:#e0e7e9;--accent:#0b7a6b;--accent-2:#16a38c;--accent-soft:#dff3ee;--r:16px;--shadow:0 1px 2px rgba(16,40,48,.05),0 10px 28px -14px rgba(16,40,48,.16)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent-2:#7fd6c0;--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 30px -14px rgba(0,0,0,.7)}}
+:root[data-theme="dark"]{--accent-2:#7fd6c0;--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 30px -14px rgba(0,0,0,.7)}
+body{-webkit-font-smoothing:antialiased}
+.top{background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);padding-block:14px 10px}
+.brand h1{font-size:19px;letter-spacing:-.01em}
+.mark{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 6px 14px -6px var(--accent)}
+.tabs{gap:6px;margin-top:12px}
+.tab{border-bottom:0;border-radius:999px;padding:8px 16px;transition:background .15s,color .15s}
+.tab:hover{background:var(--surface-2)}
+.tab.on{background:var(--ink);color:var(--bg)}
+.page-h{margin-block:26px 16px}
+.page-h h2{font-size:27px;letter-spacing:-.02em}
+.card{border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.sec-h{padding-bottom:10px}
+.sec-h h3{font-size:16px}
+.btn{border-radius:11px;padding:9px 16px;transition:border-color .15s,transform .05s,box-shadow .15s}
+.btn:active{transform:translateY(1px)}
+.btn.pri{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;box-shadow:0 8px 18px -10px var(--accent)}
+.btn.sm{padding:6px 12px;border-radius:9px}
+.btn.sm.pri{box-shadow:none}
+input[type=text],input[type=number],input[type=date],input[type=search],input[type=tel],input[type=email],select,textarea{border-radius:11px;padding:10px 12px;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.chip{border-radius:12px;padding:8px 15px;transition:border-color .12s,background .12s,transform .05s}
+.chip:hover{border-color:var(--accent)}
+.chip:active{transform:scale(.97)}
+.chip.sm{border-radius:10px}
+.kpi div{border-radius:14px;padding:12px 14px}
+.kpi b{font-size:26px}
+.li{border-radius:13px;transition:border-color .15s}
+.li:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.alert{border-radius:13px;padding:12px 14px;align-items:center;justify-content:space-between}
+.soap{border-radius:14px;padding:5px}
+.soap button{border-radius:10px;padding:9px 4px}
+.region{border-radius:14px;padding:10px 14px}
+.region span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{border-radius:var(--r)}
+.bar{background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.toast{border-radius:12px;box-shadow:var(--shadow)}
+.meter{height:7px}
+.meter i{background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:9px}
+.dx{border-radius:13px;padding:12px 14px}
+.dx.top{border-color:var(--accent);background:var(--accent-soft)}
+.dx.ok{border-color:var(--good)}
+.uses{font-size:12px;color:var(--muted);opacity:.85}
+/* answers sit two-up on wide screens so a section fits on one screen */
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));column-gap:28px}
+.qgrid .q.wide{grid-column:1/-1}
+.qgrid .q:last-child{border-bottom:1px dashed var(--line);padding-bottom:14px}
+.cond.ev{grid-template-columns:minmax(0,2fr) minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) auto}
+@media (max-width:640px){.cond.ev{grid-template-columns:1fr 1fr auto}.cond.ev>:first-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -242,6 +295,7 @@ const TYPES = {short:'Question', choice:'Choice', checklist:'Checklist', measure
 const OPS = {eq:'equals', neq:'does not equal', gt:'greater than', gte:'at least', lt:'less than', lte:'at most', has:'contains', nhas:'does not contain', answered:'is answered', empty:'is not answered'};
 const NUMOPS = ['eq','neq','gt','gte','lt','lte','answered','empty'];
 const OPS_BY = {short:['has','answered','empty'], text:['has','answered','empty'], choice:NUMOPS, checklist:['has','nhas','answered','empty'], measurement:NUMOPS, number:NUMOPS, scale:NUMOPS, yesno:['eq','neq','answered','empty'], test:['eq','neq','answered','empty']};
+const WEIGHTS = [[3, 'Strongly for'], [2, 'For'], [1, 'Slightly for'], [-2, 'Against'], [-4, 'Strongly against']];
 const ACTS = {show:'Show field', hide:'Hide field', require:'Require field', warning:'Warning', finding:'Clinical finding', diagnosis:'Suggested diagnosis', treatment:'Treatment recommendation'};
 const SIDES = ['Right', 'Left', 'Bilateral', 'Midline'];
 const VISIT_TYPES = ['Initial assessment', 'Follow-up', 'Re-assessment', 'Discharge'];
@@ -257,7 +311,7 @@ function blankTemplate(name) { return {id:uid('tpl'), name, areas:[], sections:{
 function normalize(c) {
   c = c && typeof c === 'object' ? c : {};
   const out = {schema:3, clinic:Object.assign({name:'', therapist:'', exerciseUrl:''}, c.clinic || {}), bodyAreas:c.bodyAreas || [], templates:c.templates || [], contact:c.contact || '', updatedAt:c.updatedAt || 0};
-  out.templates.forEach(t => { t.sections ||= {S:[],O:[],A:[],P:[]}; PARTS.forEach(([p]) => t.sections[p] ||= []); t.items ||= []; t.rules ||= []; t.diagnoses ||= []; t.areas ||= []; });
+  out.templates.forEach(t => { t.sections ||= {S:[],O:[],A:[],P:[]}; PARTS.forEach(([p]) => t.sections[p] ||= []); t.items ||= []; t.rules ||= []; t.diagnoses ||= []; t.areas ||= []; t.diagnoses.forEach(d => { d.evidence ||= []; d.treatment ||= []; }); });
   return out;
 }
 
@@ -302,7 +356,7 @@ function testRule(r, ans, visible) {
   return r.logic === 'or' ? res.some(Boolean) : res.every(Boolean);
 }
 function evaluate(tpl, region) {
-  const out = {visible:new Set(), conditional:new Set(), fired:[], required:new Set(), dx:new Map(), warnings:[], findings:[], treatments:[], items:[]};
+  const out = {visible:new Set(), conditional:new Set(), fired:[], required:new Set(), dx:new Map(), warnings:[], findings:[], treatments:[], rank:[], items:[]};
   if (!tpl) return out;
   const ans = Object.assign({}, region?.answers || {}, {_area:region?.area || '', _side:region?.side || ''});
   tpl.rules.forEach(r => (r.actions || []).forEach(a => a.type === 'show' && a.target && out.conditional.add(a.target)));
@@ -330,6 +384,12 @@ function evaluate(tpl, region) {
       if (!g.items.includes(a.text)) g.items.push(a.text);
     }
   }));
+  /* Every diagnosis collects weighted evidence from the answers; meeting a criteria rule counts as strong evidence. */
+  out.rank = tpl.diagnoses.map(d => {
+    const why = [], against = [], met = out.dx.has(d.id); let score = met ? 5 : 0;
+    (d.evidence || []).forEach(e => { if (!testCond(e, ans, visible)) return; const w = Number(e.w) || 0; score += w; (w > 0 ? why : against).push(condText(tpl, e)); });
+    return {d, score, met, why, against};
+  }).filter(x => x.score > 0 || x.met).sort((a, b) => b.score - a.score);
   out.items = tpl.items.filter(i => visible.has(i.id));
   return out;
 }
@@ -525,12 +585,12 @@ function render() {
 }
 
 /* ----- account ----- */
-const fmtMs = ms => ms ? new Date(ms).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : 'â€”';
+const fmtMs = ms => ms ? new Date(ms).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : '—';
 function accountNote() {
   const contact = S.cfg.contact ? ` ${esc(S.cfg.contact)}` : '';
   if (S.role === 'guest') return `<div class="alert info"><span>Guest mode: run assessments and download reports freely. Patients are kept in this browser only. Sign in and subscribe to keep them in your own account.${contact}</span></div>`;
   const st = subState();
-  if (st === 'none') return `<div class="alert info"><span>Signed in as ${esc(S.user.email)}. Your subscription isnâ€™t active yet, so patients stay in this browser. Ask the admin to activate it.${contact}</span></div>`;
+  if (st === 'none') return `<div class="alert info"><span>Signed in as ${esc(S.user.email)}. Your subscription isn’t active yet, so patients stay in this browser. Ask the admin to activate it.${contact}</span></div>`;
   if (st === 'expired') return `<div class="alert warn"><span>Your subscription ended on ${fmtMs(S.sub.expires)}. Your records are still readable; renew to add or edit.${contact}</span></div>`;
   const n = LS.get('pf3_patients', []).length;
   return n && S.udb ? `<div class="alert info"><span>${n} patient${n === 1 ? '' : 's'} saved in this browser before you subscribed.</span><button class="btn sm" data-act="importLocal">Move to my account</button></div>` : '';
@@ -540,7 +600,7 @@ function viewSubs() {
   const rows = S.users.filter(u => !ADMIN_EMAILS.includes(u.email)).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
   return `<div class="page-h"><div><h2>Subscribers</h2><div class="small muted">Everyone who has signed in. Activate an account once you have received payment.</div></div></div>
     <div class="list">${rows.map(u => { const s = S.subs[u.uid], on = s?.active && s.expires > Date.now(); return `<div class="li"><div class="li-h" style="flex-wrap:wrap">
-      <div class="t"><b>${esc(u.name || u.email)}</b><span class="small muted">${esc(u.email)} Â· last seen ${fmtMs(u.lastSeen)}</span></div>
+      <div class="t"><b>${esc(u.name || u.email)}</b><span class="small muted">${esc(u.email)} · last seen ${fmtMs(u.lastSeen)}</span></div>
       <span class="badge ${on ? 'good' : s ? 'bad' : ''}">${on ? 'Active until ' + fmtMs(s.expires) : s ? 'Ended' : 'Not subscribed'}</span>
       ${[[1, '+1 month'], [3, '+3 months'], [12, '+1 year']].map(([m, l]) => `<button class="btn sm" data-act="subAdd" data-id="${u.uid}" data-v="${m}">${l}</button>`).join('')}
       ${on ? delBtn('sub' + u.uid, 'subOff', `data-id="${u.uid}"`).replace('>Delete<', '>Deactivate<') : ''}</div></div>`; }).join('') || `<div class="empty">No one else has signed in yet. Share the site link; accounts appear here after their first sign-in.</div>`}</div>`;
@@ -548,7 +608,7 @@ function viewSubs() {
 /* ----- dashboard ----- */
 function visitSummary(v) {
   const regs = v.assessment?.regions || [];
-  const dx = [...new Set(regs.flatMap(r => { const t = tplById(r.templateId); const ev = evaluate(t, r); return [...ev.dx.keys()].map(id => t?.diagnoses.find(d => d.id === id)?.name).filter(Boolean); }))];
+  const dx = [...new Set(regs.flatMap(r => { const t = tplById(r.templateId); const ev = evaluate(t, r), ch = (t?.diagnoses || []).filter(d => r.confirmed?.[d.id]).map(d => d.name); return ch.length || r.dxOther ? [...ch, r.dxOther].filter(Boolean) : ev.rank.slice(0, 1).map(x => x.d.name); }))];
   return {regs:regs.map(regionName), dx};
 }
 function visitRow(v, showPatient = true) {
@@ -692,7 +752,7 @@ function viewVisit() {
   <section class="card stack" style="margin-bottom:16px">
     <div class="sec-h"><h3>Assessment regions</h3><span class="small muted">Each region keeps its own data</span></div>
     <div class="regions" role="tablist">${v.assessment.regions.map(r => { const ev = evaluate(tplById(r.templateId), r); return `<button class="region ${r.id === reg?.id ? 'on' : ''}" data-act="region" data-id="${r.id}" role="tab" aria-selected="${r.id === reg?.id}">
-      <b>${esc(regionName(r))}</b><span>${ev.dx.size ? `${ev.dx.size} suggested dx` : `${[...ev.visible].filter(id => answered(id, r)).length} answered`}${ev.warnings.length ? ' · ⚠' : ''}</span></button>`; }).join('')}
+      <b>${esc(regionName(r))}</b><span>${ev.rank.length ? esc(ev.rank[0].d.name) : `${[...ev.visible].filter(id => answered(id, r)).length} answered`}${ev.warnings.length ? ' · ⚠' : ''}</span></button>`; }).join('')}
       <button class="region add" data-act="picker">+ Add region</button></div>
     ${S.picker ? pickerHTML() : ''}
   </section>
@@ -722,7 +782,7 @@ function pickerHTML() {
   </div>`;
 }
 function regionHTML(reg) {
-  const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg);
+  const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg), plan = planFor(reg, ev, tpl), uses = usesMap(tpl);
   const counts = PARTS.map(([k]) => { const its = ev.items.filter(i => i.part === k); return [its.filter(i => answered(i.id, reg)).length, its.length]; });
   const items = ev.items.filter(i => i.part === S.part);
   const secs = [...(tpl?.sections[S.part] || [])]; items.forEach(i => !secs.includes(i.section) && secs.push(i.section));
@@ -736,12 +796,13 @@ function regionHTML(reg) {
           ${delBtn('rg' + reg.id, 'delRegion', `data-id="${reg.id}"`).replace('>Delete<', '>Remove region<')}</div></div>
         <div class="soap" role="tablist">${PARTS.map(([k, l], i) => `<button class="${S.part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="part" data-v="${k}" role="tab"><i>${k}</i>${l}<small class="muted">${counts[i][0]}/${counts[i][1]}</small></button>`).join('')}</div>
       </section>
-      ${S.part === 'A' ? autoFindingsHTML(reg, ev, tpl) : ''}${S.part === 'P' ? txHTML(ev) : ''}
+      ${S.part === 'A' ? autoFindingsHTML(reg, ev, tpl) : ''}${S.part === 'P' ? txHTML(plan) : ''}
       ${secs.map(sec => { const its = items.filter(i => i.section === sec); if (!its.length) return '';
-        return `<section class="card"><div class="sec-h"><h3>${esc(sec)}</h3><span class="small muted">${its.filter(i => answered(i.id, reg)).length}/${its.length}</span></div>${its.map(it => qHTML(it, reg, ev, appeared(it.id))).join('')}</section>`; }).join('') || (S.part === 'A' ? '' : `<div class="empty">No fields in ${PARTS.find(p => p[0] === S.part)[1]} for this area.</div>`)}
+        const open = its.filter(i => i.type === 'test' && !answered(i.id, reg)).length;
+        return `<section class="card"><div class="sec-h"><h3>${esc(sec)}</h3><span class="row" style="gap:8px">${open > 1 ? `<button class="btn sm" data-act="allNeg" data-sec="${esc(sec)}">Rest negative</button>` : ''}<span class="small muted">${its.filter(i => answered(i.id, reg)).length}/${its.length}</span></span></div><div class="qgrid">${its.map(it => qHTML(it, reg, ev, appeared(it.id), uses)).join('')}</div></section>`; }).join('') || (S.part === 'A' ? '' : `<div class="empty">No fields in ${PARTS.find(p => p[0] === S.part)[1]} for this area.</div>`)}
       ${S.part === 'A' ? `<section class="card stack"><div class="sec-h"><h3>Clinician notes for ${esc(regionName(reg))}</h3></div><textarea id="rg_notes_${reg.id}" data-rg="notes" rows="3">${esc(reg.notes)}</textarea></section>` : ''}
       ${S.part === 'O' ? `<div class="later"><div class="row between"><b class="small">Attachments & images</b><span class="badge">Later</span></div><span class="small muted">Photos, imaging and documents for this region will attach here.</span></div>` : ''}
-      ${S.part === 'P' && !ev.treatments.length ? `<div class="later"><span class="small muted">Treatment details (goals, exercises, modalities, frequency, home program) are planned for the whole visit in the Treatment step below, not inside each region.</span></div>` : ''}
+      ${S.part === 'P' && !plan.length ? `<div class="later"><span class="small muted">Treatment details (goals, exercises, modalities, frequency, home program) are planned for the whole visit in the Treatment step below, not inside each region.</span></div>` : ''}
       <div class="row between">${S.part !== 'S' ? `<button class="btn" data-act="part" data-v="${PARTS[PARTS.findIndex(p => p[0] === S.part) - 1][0]}">← ${PARTS[PARTS.findIndex(p => p[0] === S.part) - 1][1]}</button>` : '<span></span>'}${S.part !== 'P' ? `<button class="btn" data-act="part" data-v="${PARTS[PARTS.findIndex(p => p[0] === S.part) + 1][0]}">${PARTS[PARTS.findIndex(p => p[0] === S.part) + 1][1]} →</button>` : ''}</div>
     </div>
     <aside class="card rail stack" id="rail">${railHTML(reg, ev, tpl)}</aside>
@@ -751,19 +812,48 @@ function autoFindingsHTML(reg, ev, tpl) {
   return `<section class="card stack"><div class="sec-h"><h3>From the rules</h3><span class="small muted">Updates as you answer</span></div>
     ${ev.warnings.map(w => `<div class="alert warn"><span aria-hidden="true">⚠</span><span>${esc(w)}</span></div>`).join('')}
     <div class="stack" style="gap:6px"><span class="fh">Clinical findings</span>${ev.findings.length ? ev.findings.map(f => `<div class="finding">${esc(f)}</div>`).join('') : `<span class="small muted">None yet.</span>`}</div>
-    <div class="stack" style="gap:6px"><span class="fh">Suggested diagnoses</span>${dxHTML(reg, ev, tpl)}</div></section>`;
+    <div class="stack" style="gap:6px"><span class="fh">Diagnosis ranking</span>${rankHTML(reg, ev, tpl, true)}</div></section>`;
 }
-function txHTML(ev) {
-  return ev.treatments.length ? `<section class="card stack"><div class="sec-h"><h3>Recommended treatment</h3><span class="small muted">From the findings so far</span></div>
-    ${ev.treatments.map(t => `<div class="stack" style="gap:4px"><span class="fh">${esc(t.title)}</span><ul style="margin:0;padding-left:18px">${t.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</section>` : '';
+function txHTML(plan) {
+  return plan.length ? `<section class="card stack"><div class="sec-h"><h3>Recommended treatment</h3><span class="small muted">From the findings so far</span></div>
+    ${plan.map(t => `<div class="stack" style="gap:4px"><span class="fh">${esc(t.title)}${t.tag ? ` · ${t.tag}` : ''}</span><ul style="margin:0;padding-left:18px">${t.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</section>` : '';
 }
-function dxHTML(reg, ev, tpl) {
-  const dxs = [...ev.dx.entries()].map(([id, d]) => ({d:tpl.diagnoses.find(x => x.id === id), rules:d.rules})).filter(x => x.d);
-  return dxs.length ? dxs.map(({d, rules}) => { const ok = reg.confirmed?.[d.id]; return `<div class="dx ${ok ? 'ok' : ''}">
-    <div class="dx-n"><span>${esc(d.name)}</span>${d.code ? `<span class="code">${esc(d.code)}</span>` : ''}</div>
-    <div class="why">Because ${rules.map(r => esc(ruleText(tpl, r))).join('; ')}</div>
-    <label class="check small"><input type="checkbox" id="cf_${reg.id}_${d.id}" data-act="confirm" data-id="${d.id}" ${ok ? 'checked' : ''}> Confirmed by clinician</label></div>`; }).join('')
-    : `<span class="small muted">None yet. Suggestions appear when their criteria are met.</span>`;
+const strength = x => x.met ? 'Criteria met' : x.score >= 8 ? 'Strong evidence' : x.score >= 4 ? 'Moderate evidence' : 'Weak evidence';
+/* Treatment follows what the clinician confirmed; until then, the leading diagnosis if its evidence is at least moderate. */
+function planFor(reg, ev, tpl) {
+  const chosen = tpl.diagnoses.filter(d => reg.confirmed?.[d.id]);
+  const basis = chosen.length ? chosen : ev.rank.filter((x, i) => x.met || (i === 0 && x.score >= 4)).map(x => x.d);
+  return [...basis.filter(d => d.treatment?.length).map(d => ({title:d.name, items:d.treatment, tag:chosen.length ? 'confirmed' : 'suggested'})), ...ev.treatments];
+}
+function usesMap(tpl) {
+  const m = {}, add = (item, name) => { if (item && item[0] !== '_') (m[item] ||= new Set()).add(name.replace(/\s*\(.*?\)/g, '')); };
+  tpl?.diagnoses.forEach(d => {
+    (d.evidence || []).forEach(e => add(e.item, d.name));
+    tpl.rules.filter(r => r.actions.some(a => a.type === 'diagnosis' && a.target === d.id)).forEach(r => r.groups.forEach(g => g.conds.forEach(c => add(c.item, d.name))));
+  });
+  return Object.fromEntries(Object.entries(m).map(([k, s]) => [k, [...s].slice(0, 3).join(', ') + (s.size > 3 ? ` +${s.size - 3}` : '')]));
+}
+function rankHTML(reg, ev, tpl, full) {
+  const top = ev.rank[0]?.score || 1, listed = new Set(ev.rank.map(x => x.d.id)), sfx = full ? 'f' : 'r';
+  const manual = tpl.diagnoses.filter(d => reg.confirmed?.[d.id] && !listed.has(d.id));
+  const confirm = (id, ok) => `<label class="check small"><input type="checkbox" id="cf${sfx}_${reg.id}_${id}" data-act="confirm" data-id="${id}" ${ok ? 'checked' : ''}> Confirm</label>`;
+  const row = (x, i) => { const ok = reg.confirmed?.[x.d.id], pro = [...(ev.dx.get(x.d.id)?.rules || []).map(r => r.name), ...x.why];
+    return `<div class="dx ${ok ? 'ok' : ''} ${i === 0 ? 'top' : ''}">
+      <div class="dx-n"><span>${i === 0 ? `<span class="badge good">Most likely</span> ` : ''}${esc(x.d.name)}</span><span class="code">${strength(x)}</span></div>
+      <div class="meter"><i style="width:${Math.max(8, Math.min(100, Math.round(x.score / top * 100)))}%"></i></div>
+      ${full || i === 0 ? `<div class="why">${pro.length ? 'For: ' + pro.map(esc).join('; ') : ''}${x.against.length ? `${pro.length ? '<br>' : ''}Against: ${x.against.map(esc).join('; ')}` : ''}</div>` : ''}
+      ${confirm(x.d.id, ok)}</div>`; };
+  return (ev.rank.length ? ev.rank.slice(0, full ? 6 : 3).map(row).join('') : `<span class="small muted">Nothing suggested yet. The ranking builds as you answer.</span>`)
+    + manual.map(d => `<div class="dx ok"><div class="dx-n"><span>${esc(d.name)}</span><span class="code">Chosen by clinician</span></div>${confirm(d.id, true)}</div>`).join('')
+    + (full ? `<div class="grid2"><label class="f"><span>Choose another diagnosis</span><select id="dxpick_${reg.id}" data-dxpick><option value="">Select from all diagnoses</option>${tpl.diagnoses.filter(d => !reg.confirmed?.[d.id]).map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
+      <label class="f"><span>Or write a diagnosis</span><input type="text" id="rg_dxo_${reg.id}" data-rg="dxOther" value="${esc(reg.dxOther || '')}"></label></div>` : '');
+}
+function dxReport(reg, ev, chosen) {
+  const code = d => d.code ? ` <span class="pm">${esc(d.code)}</span>` : '';
+  if (chosen.length || reg.dxOther) { const rest = ev.rank.filter(x => !reg.confirmed?.[x.d.id]).slice(0, 3);
+    return `<ul>${chosen.map(d => `<li><b>${esc(d.name)}</b>${code(d)}<span class="tag">Confirmed by clinician</span></li>`).join('')}${reg.dxOther ? `<li><b>${esc(reg.dxOther)}</b><span class="tag">Clinician diagnosis</span></li>` : ''}</ul>${rest.length ? `<div class="pm">Differential considered: ${rest.map(x => esc(x.d.name)).join(', ')}</div>` : ''}`; }
+  return ev.rank.length ? `<ul>${ev.rank.slice(0, 4).map((x, i) => `<li><b>${esc(x.d.name)}</b>${code(x.d)}<span class="tag">${i === 0 ? 'Most likely' : 'Differential'} · ${strength(x)}</span>
+    <div class="pm" style="font-size:11.5px">Based on: ${[...(ev.dx.get(x.d.id)?.rules || []).map(r => r.name), ...x.why].map(esc).join('; ')}</div></li>`).join('')}</ul>` : `<div class="pm">No suggested diagnosis from the findings.</div>`;
 }
 function railHTML(reg, ev, tpl) {
   const req = [...ev.required], done = req.filter(id => answered(id, reg)).length;
@@ -774,10 +864,10 @@ function railHTML(reg, ev, tpl) {
       ${missing.length ? `<div class="small muted" style="margin-top:6px">Missing: ${missing.slice(0, 4).map(i => `<a href="#" data-act="jump" data-v="${i.part}">${esc(i.label)}</a>`).join(', ')}${missing.length > 4 ? '…' : ''}</div>` : ''}</div>
     ${ev.warnings.length ? `<div class="stack" style="gap:6px"><span class="fh">Warnings</span>${ev.warnings.map(w => `<div class="alert warn"><span aria-hidden="true">⚠</span><span>${esc(w)}</span></div>`).join('')}</div>` : ''}
     ${ev.findings.length ? `<div class="stack" style="gap:6px"><span class="fh">Clinical findings</span>${ev.findings.map(f => `<div class="finding small">${esc(f)}</div>`).join('')}</div>` : ''}
-    <div class="stack" style="gap:6px"><span class="fh">Suggested diagnoses</span>${dxHTML(reg, ev, tpl)}</div>
-    ${ev.treatments.length ? `<a href="#" class="small" data-act="jump" data-v="P">Recommended treatment for ${ev.treatments.length} problem${ev.treatments.length === 1 ? '' : 's'} → Plan</a>` : ''}`;
+    <div class="stack" style="gap:6px"><span class="fh">Diagnosis ranking</span>${rankHTML(reg, ev, tpl, false)}</div>
+    ${planFor(reg, ev, tpl).length ? `<a href="#" class="small" data-act="jump" data-v="P">Recommended treatment is ready → Plan</a>` : ''}`;
 }
-function qHTML(it, reg, ev, appear) {
+function qHTML(it, reg, ev, appear, uses) {
   const v = reg.answers[it.id], req = ev.required.has(it.id), ida = `a_${reg.id}_${it.id}`;
   let input = '';
   if (['yesno','choice','test'].includes(it.type)) {
@@ -798,10 +888,10 @@ function qHTML(it, reg, ev, appear) {
   } else {
     input = `<textarea id="${ida}" data-ans="${it.id}" rows="2">${esc(v ?? '')}</textarea>`;
   }
-  return `<div class="q ${appear ? 'appear' : ''}">
+  return `<div class="q ${appear ? 'appear' : ''} ${['text','checklist','scale','short'].includes(it.type) ? 'wide' : ''}">
     <div class="q-h"><div class="q-l">${esc(it.label)}${req ? ` <span class="star" title="Required">*</span>` : ''}${it.unit && it.type === 'choice' ? ` <span class="muted small">(${esc(it.unit)})</span>` : ''}</div>
       <div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}</div></div>
-    ${it.help ? `<div class="help">${esc(it.help)}</div>` : ''}${input}</div>`;
+    ${it.help ? `<div class="help">${esc(it.help)}</div>` : ''}${input}${uses?.[it.id] ? `<div class="uses">Helps decide: ${esc(uses[it.id])}</div>` : ''}</div>`;
 }
 
 /* ----- report ----- */
@@ -818,7 +908,7 @@ function regionReport(reg, n) {
     const body = secs.map(s => { const x = its.filter(i => i.section === s); return x.length ? `<h4>${esc(s)}</h4><table>${x.map(i => { const val = ans[i.id], cls = i.type === 'test' ? (/^pos/i.test(val) ? 'pos' : /^neg/i.test(val) ? 'neg' : '') : ''; return `<tr><th>${esc(i.label)}</th><td class="${cls}">${esc(valText(i, val)).replace(/\n/g, '<br>')}</td></tr>`; }).join('')}</table>` : ''; }).join('');
     return body;
   };
-  const dxs = [...ev.dx.entries()].map(([id, d]) => ({d:tpl.diagnoses.find(x => x.id === id), rules:d.rules})).filter(x => x.d);
+  const chosen = tpl.diagnoses.filter(d => reg.confirmed?.[d.id]), plan = planFor(reg, ev, tpl);
   const S_ = part('S'), O_ = part('O'), A_ = part('A'), P_ = part('P');
   return `<div class="reg"><h2>${n}. ${esc(regionName(reg))}</h2>
     ${S_ ? `<div class="avoid"><h3>Subjective</h3>${S_}</div>` : ''}
@@ -826,10 +916,10 @@ function regionReport(reg, n) {
     <div class="avoid"><h3>Assessment</h3>
       ${ev.warnings.length ? `<h4>Warnings</h4><ul>${ev.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
       ${ev.findings.length ? `<h4>Clinical findings</h4><ul>${ev.findings.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
-      <h4>Diagnosis</h4>${dxs.length ? `<ul>${dxs.map(({d, rules}) => `<li><b>${esc(d.name)}</b>${d.code ? ` <span class="pm">${esc(d.code)}</span>` : ''}<span class="tag">${reg.confirmed?.[d.id] ? 'Confirmed by clinician' : 'Suggested'}</span><div class="pm" style="font-size:11.5px">Based on: ${rules.map(r => esc(ruleText(tpl, r))).join('; ')}</div></li>`).join('')}</ul>` : `<div class="pm">No suggested diagnosis from the findings.</div>`}
+      <h4>Diagnosis</h4>${dxReport(reg, ev, chosen)}
       ${A_}
       ${reg.notes ? `<h4>Clinician notes</h4><div class="note">${esc(reg.notes).replace(/\n/g, '<br>')}</div>` : ''}</div>
-    ${P_ || ev.treatments.length ? `<div><h3>Plan</h3>${ev.treatments.map(t => `<h4>${esc(t.title)}</h4><ul>${t.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`).join('')}${P_}</div>` : ''}
+    ${P_ || plan.length ? `<div><h3>Plan</h3>${plan.map(t => `<h4>${esc(t.title)}</h4><ul>${t.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`).join('')}${P_}</div>` : ''}
   </div>`;
 }
 function reportBody(v) {
@@ -853,8 +943,8 @@ function reportBody(v) {
 function viewReport() {
   const v = S.visits.find(x => x.id === S.route.id) || S.visit; if (!v) return '';
   return `<div class="row noprint" style="margin-top:16px"><button class="btn" data-act="openVisit" data-id="${v.id}">Back to visit</button>
-    <button class="btn pri" data-act="pdf" data-id="${v.id}" id="pdfbtn">Download PDF</button>
-    ${S.dl ? '' : `<button class="btn" data-act="print">Print</button>`}
+    <button class="btn pri" data-act="print">Save as PDF / Print</button>
+    <button class="btn" data-act="pdf" data-id="${v.id}" id="pdfbtn">Download PDF file</button>
     <button class="btn" data-act="copyRep">Copy as text</button></div>
     <div class="paper-wrap">${reportBody(v)}</div>`;
 }
@@ -933,6 +1023,9 @@ function bRules(tpl, ti) {
   const tog = (path, val) => `<span class="toggle"><button class="${val !== 'or' ? 'on' : ''}" data-act="setv" data-path="${path}" data-v="and">AND</button><button class="${val === 'or' ? 'on' : ''}" data-act="setv" data-path="${path}" data-v="or">OR</button></span>`;
   return `<div class="stack">
     ${warns.length ? `<div class="val"><b>Needs review (${warns.length})</b><ul>${warns.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : `<div class="alert info">All rules look valid.</div>`}
+    ${(() => { const used = new Set(); tpl.rules.forEach(r => r.groups.forEach(g => g.conds.forEach(c => used.add(c.item)))); tpl.diagnoses.forEach(d => d.evidence.forEach(e => used.add(e.item)));
+      const idle = tpl.items.filter(i => !['short','text'].includes(i.type) && ['S','O'].includes(i.part) && !used.has(i.id));
+      return idle.length ? `<div class="small muted">Asked but not used by any rule or diagnosis yet: ${idle.map(i => esc(i.label)).join(', ')}</div>` : ''; })()}
     <div class="row between"><span class="small muted">Rules run inside each region separately. “Region › body area” and “Region › side” let a rule depend on where you are.</span><button class="btn sm pri" data-act="addRule">+ New rule</button></div>
     ${tpl.rules.map((r, ri) => { const rp = `${P}.rules.${ri}`; return `<div class="rule" id="rule_${r.id}">
       <div class="rule-h">${mvBtns(`data-k="rule" data-i="${ri}"`, ri > 0, ri < tpl.rules.length - 1)}<input type="text" id="${rp}.name" data-b="${rp}.name" value="${esc(r.name)}" placeholder="Rule name">${delBtn('ru' + r.id, 'delRule', `data-i="${ri}"`)}</div>
@@ -957,13 +1050,29 @@ function bRules(tpl, ti) {
         <div class="small muted" style="border-top:1px solid var(--line);padding-top:8px">IF ${esc(ruleText(tpl, r) || '…')} → ${r.actions.map(a => esc(ACTS[a.type])).join(', ') || 'no action'}</div>
       </div></div>`; }).join('') || `<div class="empty">No rules yet. A rule says IF (condition) THEN (action), e.g. IF “Pain present” equals Yes → Show “Pain intensity”.</div>`}</div>`;
 }
+function fieldOptions(tpl, sel) {
+  return `<option value="">Select field</option><optgroup label="Region">${PSEUDO().map(i => `<option value="${i.id}" ${sel === i.id ? 'selected' : ''}>${esc(i.label)}</option>`).join('')}</optgroup>${PARTS.map(([k, l]) => `<optgroup label="${l}">${tpl.items.filter(i => i.part === k).map(i => `<option value="${i.id}" ${sel === i.id ? 'selected' : ''}>${esc(i.label)}</option>`).join('')}</optgroup>`).join('')}`;
+}
+function dxEditor(tpl, d, i, p) {
+  return `<div class="stack" style="gap:6px"><span class="fh">Evidence: answers that make this more or less likely</span>
+    ${d.evidence.map((e, ei) => { const ep = `${p}.evidence.${ei}`, it = itemIn(tpl, e.item), ops = OPS_BY[it?.type] || Object.keys(OPS), idp = `e_${d.id}_${ei}_`; return `<div class="cond ev">
+      <select id="${idp}i" data-b="${ep}.item" data-rr="1" aria-label="Field">${fieldOptions(tpl, e.item)}</select>
+      <select id="${idp}o" data-b="${ep}.op" data-rr="1" aria-label="Comparison">${ops.map(o => `<option value="${o}" ${e.op === o ? 'selected' : ''}>${OPS[o]}</option>`).join('')}</select>
+      ${valueInput(tpl, e, ep, idp)}
+      <select id="${idp}w" data-b="${ep}.w" aria-label="Weight">${WEIGHTS.map(([w, l]) => `<option value="${w}" ${Number(e.w) === w ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <button class="icon" data-act="delEv" data-i="${i}" data-e="${ei}" aria-label="Remove evidence">✕</button></div>`; }).join('')}
+    <div><button class="btn sm ghost" data-act="addEv" data-i="${i}">+ Evidence</button></div></div>
+    <label class="f"><span>Treatment, one per line (shown in Plan when this is the leading or confirmed diagnosis)</span><textarea id="${p}.treatment" data-b="${p}.treatment" data-t="lines" rows="5">${esc(d.treatment.join('\n'))}</textarea></label>`;
+}
 function bDx(tpl, ti) {
-  return `<div class="stack"><div class="row between"><span class="small muted">Suggested by rules, then confirmed or ignored by the clinician.</span><button class="btn sm pri" data-act="addDx">+ Diagnosis</button></div>
+  return `<div class="stack"><div class="row between"><span class="small muted">Each diagnosis is ranked by its evidence; the clinician confirms or chooses another.</span><button class="btn sm pri" data-act="addDx">+ Diagnosis</button></div>
     <div class="list">${tpl.diagnoses.map((d, i) => { const crit = tpl.rules.filter(r => r.actions?.some(a => a.type === 'diagnosis' && a.target === d.id)); const p = `templates.${ti}.diagnoses.${i}`; return `<div class="li"><div class="li-b" style="border-top:0">
       <div class="grid2"><label class="f"><span>Diagnosis</span><input type="text" id="${p}.name" data-b="${p}.name" value="${esc(d.name)}"></label>
       <label class="f"><span>Code (ICD-10)</span><input type="text" id="${p}.code" data-b="${p}.code" value="${esc(d.code)}"></label></div>
       <div class="small"><b>Criteria:</b> ${crit.length ? crit.map(r => `<a href="#" data-act="gotoRule" data-id="${r.id}">${esc(ruleText(tpl, r))}</a>`).join(' <b>or</b> ') : '<span class="muted">No criteria yet</span>'}</div>
-      <div class="row"><button class="btn sm" data-act="ruleForDx" data-id="${d.id}">+ Criteria rule</button>${delBtn('dx' + d.id, 'delDx', `data-i="${i}"`)}</div></div></div>`; }).join('') || `<div class="empty">No diagnoses yet.</div>`}</div></div>`;
+      <div class="small muted">${d.evidence.length} evidence item${d.evidence.length === 1 ? '' : 's'} · ${d.treatment.length} treatment line${d.treatment.length === 1 ? '' : 's'}</div>
+      ${S.open === 'dx_' + d.id ? dxEditor(tpl, d, i, p) : ''}
+      <div class="row"><button class="btn sm pri" data-act="toggle" data-id="dx_${d.id}">${S.open === 'dx_' + d.id ? 'Close' : 'Edit evidence & treatment'}</button><button class="btn sm" data-act="ruleForDx" data-id="${d.id}">+ Criteria rule</button>${delBtn('dx' + d.id, 'delDx', `data-i="${i}"`)}</div></div></div>`; }).join('') || `<div class="empty">No diagnoses yet.</div>`}</div></div>`;
 }
 function viewSettings() {
   const c = S.cfg, groups = [...new Set(c.bodyAreas.map(a => a.group || 'Other'))];
@@ -983,7 +1092,7 @@ function viewSettings() {
         ${delBtn('example', 'loadExample', '').replace('>Delete<', '>Reset to example templates<')}</div>
       <div class="small muted">Import and reset replace all templates, fields, rules and diagnoses. Patients and visits are not touched.</div></section>`}
     ${!window.firebase ? '' : `<section class="card stack"><div class="sec-h"><h3>Account</h3></div>
-      ${S.user ? `<div class="row between"><span class="small muted">Signed in as ${esc(S.user.email)} Â· ${S.canAdmin ? 'Admin' : {active:'Subscribed until ' + fmtMs(S.sub?.expires), expired:'Subscription ended', none:'Not subscribed'}[subState()]}</span><button class="btn sm" data-act="signOut">Sign out</button></div>`
+      ${S.user ? `<div class="row between"><span class="small muted">Signed in as ${esc(S.user.email)} · ${S.canAdmin ? 'Admin' : {active:'Subscribed until ' + fmtMs(S.sub?.expires), expired:'Subscription ended', none:'Not subscribed'}[subState()]}</span><button class="btn sm" data-act="signOut">Sign out</button></div>`
         : `<div class="row between"><span class="small muted">Guest. Sign in to subscribe and keep patients in your account.</span><button class="btn sm pri" data-act="signIn">Sign in with Google</button></div>`}</section>`}
   </div>`;
 }
@@ -1085,7 +1194,12 @@ document.addEventListener('click', async e => {
     case 'delGroup': tpl.rules[+d.r].groups.splice(+d.g, 1); touch(); render(); break;
     case 'addAct': tpl.rules[+d.r].actions.push({type:'show', target:''}); touch(); render(); break;
     case 'delAct': tpl.rules[+d.r].actions.splice(+d.a, 1); touch(); render(); break;
-    case 'addDx': tpl.diagnoses.push({id:uid('d'), name:'New diagnosis', code:''}); touch(); render(); break;
+    case 'addDx': { const nd = {id:uid('d'), name:'New diagnosis', code:'', evidence:[], treatment:[]}; tpl.diagnoses.push(nd); S.open = 'dx_' + nd.id; touch(); render(); break; }
+    case 'addEv': tpl.diagnoses[+d.i].evidence.push({item:'', op:'eq', value:'', w:2}); touch(); render(); break;
+    case 'delEv': tpl.diagnoses[+d.i].evidence.splice(+d.e, 1); touch(); render(); break;
+    case 'allNeg': { const r = curRegion(), ev = evaluate(tplById(r.templateId), r);
+      ev.items.filter(i => i.type === 'test' && i.part === S.part && i.section === d.sec && !answered(i.id, r)).forEach(i => { const n = optionsOf(i).find(o => /^neg/i.test(o)); if (n) r.answers[i.id] = n; });
+      saveVisit(); render(); break; }
     case 'delDx': arm('dx' + tpl.diagnoses[+d.i].id, () => { tpl.diagnoses.splice(+d.i, 1); touch(); }); break;
     case 'ruleForDx': { const dx = tpl.diagnoses.find(x => x.id === d.id); addRuleAndGo(newRule('Criteria: ' + dx.name, [{item:'', op:'eq', value:''}], [{type:'diagnosis', target:dx.id}])); break; }
     case 'gotoRule': S.btab = 'rules'; render(); setTimeout(() => $('#rule_' + d.id)?.scrollIntoView({block:'start', behavior:'smooth'}), 30); break;
@@ -1119,6 +1233,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target, d = t.dataset;
+  if (d.dxpick !== undefined) { if (t.value) { const r = curRegion(); (r.confirmed ||= {})[t.value] = true; saveVisit(); render(); } return; }
   if (t.id === 'imp' && t.files?.[0]) {
     const fr = new FileReader(); fr.onload = () => { try { const j = JSON.parse(fr.result); if (!Array.isArray(j.templates)) throw 0; S.cfg.templates = normalize(j).templates; S.tplId = S.cfg.templates[0]?.id; touch(); toast('Templates imported'); render(); } catch { toast('That file isn’t a templates export from this app'); } }; fr.readAsText(t.files[0]); t.value = ''; return;
   }
@@ -1134,7 +1249,7 @@ document.addEventListener('change', e => {
     const tpl = TPL();
     if (/items\.\d+\.type$/.test(d.b)) { const it = getPath(S.cfg, d.b.replace(/\.type$/, '')); if (['choice','checklist'].includes(v) && !it.options?.length) it.options = ['Option 1', 'Option 2']; if (v === 'test' && !it.options?.length) it.options = ['Positive','Negative','Equivocal']; }
     if (/items\.\d+\.part$/.test(d.b)) { const it = getPath(S.cfg, d.b.replace(/\.part$/, '')); it.section = tpl.sections[v][0] || ''; S.bpart = v; }
-    if (/conds\.\d+\.item$/.test(d.b)) { const cd = getPath(S.cfg, d.b.replace(/\.item$/, '')); const ops = OPS_BY[itemIn(tpl, v)?.type] || []; if (!ops.includes(cd.op)) cd.op = ops[0] || 'eq'; cd.value = ''; }
+    if (/(conds|evidence)\.\d+\.item$/.test(d.b)) { const cd = getPath(S.cfg, d.b.replace(/\.item$/, '')); const ops = OPS_BY[itemIn(tpl, v)?.type] || []; if (!ops.includes(cd.op)) cd.op = ops[0] || 'eq'; cd.value = ''; }
     if (/actions\.\d+\.type$/.test(d.b)) { const ac = getPath(S.cfg, d.b.replace(/\.type$/, '')); ac.target = ''; ac.text = ''; }
     touch(); if (d.rr || d.t === 'bool') render();
   }
@@ -1143,20 +1258,24 @@ document.addEventListener('change', e => {
 /* ================= PDF ================= */
 let pdfLib;
 function loadPdfLib() { return pdfLib ||= new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'; s.onload = () => res(window.html2pdf); s.onerror = () => { pdfLib = null; rej(); }; document.head.appendChild(s); }); }
+/* The file is rendered from an A4-wide copy so it looks the same on a phone, and the scale drops for long reports so the canvas stays within browser limits. */
 async function makePdf(btn, v) {
   const el = $('#paper'); if (!el || !v) return;
   btn.disabled = true; const old = btn.textContent; btn.textContent = 'Preparing…';
+  const box = document.createElement('div'); box.style.cssText = 'position:absolute;left:0;top:0;width:794px;opacity:0;pointer-events:none;z-index:-1';
+  const copy = el.cloneNode(true); copy.removeAttribute('id'); copy.style.cssText = 'width:794px;max-width:none;margin:0;padding:0;box-shadow:none;border-radius:0';
+  box.appendChild(copy); document.body.appendChild(box);
   try {
     const h2p = await loadPdfLib(); await document.fonts?.ready;
     const name = (patientOf(v)?.name || 'patient').replace(/[^\p{L}\p{N}]+/gu, '-');
-    const opts = {margin:[8, 8, 10, 8], image:{type:'jpeg', quality:0.96}, html2canvas:{scale:2, backgroundColor:'#ffffff', windowWidth:820}, jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}, pagebreak:{mode:['css'], avoid:'.avoid'}};
+    const scale = Math.max(1, Math.min(2, Math.sqrt(12e6 / (794 * Math.max(copy.scrollHeight, 1)))));
+    const opts = {margin:[10, 10, 12, 10], image:{type:'jpeg', quality:0.95}, html2canvas:{scale, backgroundColor:'#ffffff', windowWidth:794, scrollX:0, scrollY:0}, jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}, pagebreak:{mode:['css', 'legacy'], avoid:['tr', 'li', 'h2', 'h3', 'h4', '.avoid']}};
     const filename = `${name}-assessment-${v.date}.pdf`;
-    if (S.dl) { const blob = await h2p().set(opts).from(el).outputPdf('blob'); await S.dl.save({filename, data:blob}); }
-    else await h2p().set(Object.assign(opts, {filename})).from(el).save();
-  } catch (err) { if (err?.code !== 'declined') toast('Couldn’t create the PDF, try again'); }
-  btn.disabled = false; btn.textContent = old;
+    if (S.dl) { const blob = await h2p().set(opts).from(copy).outputPdf('blob'); await S.dl.save({filename, data:blob}); }
+    else await h2p().set(Object.assign(opts, {filename})).from(copy).save();
+  } catch (err) { if (err?.code !== 'declined') toast('Couldn’t create the file. Use “Save as PDF / Print” instead.'); }
+  box.remove(); btn.disabled = false; btn.textContent = old;
 }
-
 boot();
 </script>
 
