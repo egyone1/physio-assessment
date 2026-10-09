@@ -371,6 +371,19 @@ textarea{min-height:44px}
 .check.tx input{margin-top:3px;flex:none;accent-color:var(--p)}
 .check.tx input:checked+span{font-weight:600}
 .toggle button{padding:4px 10px}
+/* ---- continuous page ---- */
+.soapbar{position:sticky;top:var(--top-h,88px);z-index:15;background:var(--bg);padding-block:4px}
+.soap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.soap button{width:100%;min-width:0;flex-direction:row;justify-content:center;align-items:baseline;gap:5px;padding:7px 2px;white-space:nowrap;overflow:hidden}
+.soap button span{overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+.soap button small{font-size:11px;font-weight:500;opacity:.75}
+.soap button i{font-size:11px;opacity:.7}
+.part{scroll-margin-top:calc(var(--top-h,88px) + 52px)}
+.part-h{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:16px;color:var(--pc);padding:8px 2px 0}
+.part-h i{font-style:normal;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--pc);color:#fff;font-size:12px}
+.sec{border-inline-start:4px solid var(--pc)}
+.sec-t{cursor:default;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--pc) 7%,transparent)}
+.sec-t .btn.sm{padding:3px 10px}
 </style>
 </head>
 <body>
@@ -395,7 +408,7 @@ const fmtDate = d => { if (!d) return '—'; try { return new Date(d + (String(d
 const daysFromToday = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
 
 /* Content language: questions, hints, options and section names can carry an Arabic version; stored answers stay in English so rules keep working. */
-const UI_AR = {Subjective:'الشكوى', Objective:'الفحص', Assessment:'التقييم', Plan:'الخطة', Quick:'سريع', Full:'كامل', Next:'التالي', 'Rest negative':'الباقي سلبي', 'Helps decide':'يفيد في', Summary:'الخلاصة', Express:'مختصر', 'Treatment plan':'خطة العلاج', 'Problem list':'قائمة المشاكل', Symptoms:'الأعراض', Tests:'الاختبارات', 'Modalities & techniques':'الأجهزة والتقنيات', Sessions:'الجلسات', 'one tap = positive, two = negative':'ضغطة = إيجابي، ضغطتان = سلبي', 'tick what you will do':'علّم اللي هتنفّذه', 'No pain':'لا ألم', 'Worst imaginable':'أسوأ ألم'};
+const UI_AR = {Subjective:'الشكوى', Objective:'الفحص', Assessment:'التقييم', Plan:'الخطة', Quick:'سريع', Full:'كامل', Next:'التالي', 'Rest negative':'الباقي سلبي', 'Helps decide':'يفيد في', Summary:'الخلاصة', Express:'مختصر', 'Treatment plan':'خطة العلاج', 'Problem list':'قائمة المشاكل', Symptoms:'الأعراض', Tests:'الاختبارات', 'Modalities & techniques':'الأجهزة والتقنيات', Sessions:'الجلسات', 'one tap = positive, two = negative':'ضغطة = إيجابي، ضغطتان = سلبي', 'tick what you will do':'علّم اللي هتنفّذه', 'Add your own':'أضف اختيارك', 'Treatment notes: technique, dose, exercises':'ملاحظات العلاج: التقنية، الجرعة، التمارين', 'No pain':'لا ألم', 'Worst imaginable':'أسوأ ألم'};
 const AR = () => S.lang === 'ar';
 const tr = s => AR() ? UI_AR[s] || s : s;
 const tL = it => AR() && it.ar?.label || it.label;
@@ -696,6 +709,7 @@ function render() {
   </header>
   ${!S.loaded ? `<div class="empty" style="margin-top:24px">Loading…</div>` : ({home:viewHome, newvisit:viewNewVisit, patients:viewPatients, patient:viewPatient, visit:viewVisit, report:viewReport, builder:viewBuilder, subs:viewSubs, settings:viewSettings}[pg] || viewHome)()}`;
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus({preventScroll:true}); if (el.setSelectionRange && /text|search/.test(el.type)) { const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } }
+  document.documentElement.style.setProperty('--top-h', ($('.top')?.offsetHeight || 88) + 'px');
   window.scrollTo(0, scrollY);
 }
 
@@ -893,38 +907,27 @@ function pickerHTML() {
 }function regionHTML(reg) {
   const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg), plan = planFor(reg, ev, tpl), uses = usesMap(tpl);
   if (S.express) return expressHTML(reg, tpl, ev, plan, uses);
-  /* Quick mode keeps the key questions; anything required or already answered stays visible. */
-  const shown = i => !S.quick || i.quick || ev.required.has(i.id) || answered(i.id, reg);
-  const counts = PARTS.map(([k]) => { const its = ev.items.filter(i => i.part === k && shown(i)); return [its.filter(i => answered(i.id, reg)).length, its.length]; });
-  const items = ev.items.filter(i => i.part === S.part && shown(i));
-  const secs = [...(tpl?.sections[S.part] || [])]; items.forEach(i => !secs.includes(i.section) && secs.push(i.section));
-  const live = secs.filter(s => items.some(i => i.section === s)), of = s => items.filter(i => i.section === s), doneIn = s => of(s).filter(i => answered(i.id, reg)).length;
-  if (!live.includes(S.sec)) S.sec = live.find(s => doneIn(s) < of(s).length) || live[0] || null;
+  /* Quick keeps the key questions; anything already answered stays visible. */
+  const shown = i => !S.quick || i.quick || answered(i.id, reg), dir = AR() ? 'dir="rtl"' : '';
   const prev = S.prevVisible, appeared = id => prev.size && !prev.has(id);
   S.prevVisible = ev.visible; S.lastVisKey = [...ev.visible].join(',');
-  const pi = PARTS.findIndex(p => p[0] === S.part);
-  const secHTML = (sec, k) => { const its = of(sec), done = doneIn(sec), open = sec === S.sec, next = live[k + 1];
-    const tests = its.filter(i => i.type === 'test' && !answered(i.id, reg)).length;
-    return `<section class="card sec ${open ? 'open' : ''}">
-      <button class="sec-t" data-act="sec" data-v="${esc(sec)}" aria-expanded="${open}"><span class="sec-n ${done === its.length ? 'done' : done ? 'part' : ''}">${done === its.length ? '✓' : k + 1}</span><b>${esc(tSec(tpl, sec))}</b><span class="small muted">${done}/${its.length}</span><span class="chev" aria-hidden="true">${open ? '▾' : '▸'}</span></button>
-      ${open ? `<div class="qgrid" ${AR() ? 'dir="rtl"' : ''}>${its.map(it => qHTML(it, reg, ev, appeared(it.id), uses)).join('')}</div>
-        <div class="row between sec-f">${tests > 1 ? `<button class="btn sm" data-act="allNeg" data-sec="${esc(sec)}">${tr('Rest negative')}</button>` : '<span></span>'}
-          ${next ? `<button class="btn sm pri" data-act="sec" data-v="${esc(next)}">${tr('Next')}: ${esc(tSec(tpl, next))} ›</button>` : pi < 3 ? `<button class="btn sm pri" data-act="part" data-v="${PARTS[pi + 1][0]}">${tr(PARTS[pi + 1][1])} ›</button>` : ''}</div>` : ''}
-    </section>`; };
-  return `<div class="visit" style="--pc:${PART_COLOR[S.part]}">
+  const of = k => ev.items.filter(i => i.part === k && shown(i));
+  const partHTML = ([k, l]) => {
+    const items = of(k), secs = [...(tpl?.sections[k] || [])]; items.forEach(i => !secs.includes(i.section) && secs.push(i.section));
+    const body = secs.map(sec => { const its = items.filter(i => i.section === sec); if (!its.length) return '';
+      const done = its.filter(i => answered(i.id, reg)).length, tests = its.filter(i => i.type === 'test' && !answered(i.id, reg)).length;
+      return `<section class="card sec"><div class="sec-t"><span class="sec-n ${done === its.length ? 'done' : done ? 'part' : ''}">${done === its.length ? '✓' : done || ''}</span><b>${esc(tSec(tpl, sec))}</b>${tests > 1 ? `<button class="btn sm" data-act="allNeg" data-part="${k}" data-sec="${esc(sec)}">${tr('Rest negative')}</button>` : ''}<span class="small muted">${done}/${its.length}</span></div>
+        <div class="qgrid" ${dir}>${its.map(it => qHTML(it, reg, ev, appeared(it.id), uses)).join('')}</div></section>`; }).join('');
+    return `<div class="part stack tight" id="part_${k}" style="--pc:${PART_COLOR[k]}"><div class="part-h"><i>${k}</i>${tr(l)}</div>
+      ${k === 'A' ? autoFindingsHTML(reg, ev, tpl) + problemsHTML(reg) : ''}${k === 'P' ? planCard(reg, plan) : ''}${body}
+      ${k === 'A' ? `<section class="card stack tight"><span class="fh">Clinician notes</span><textarea id="rg_notes_${reg.id}" data-rg="notes" rows="2">${esc(reg.notes)}</textarea></section>` : ''}</div>`; };
+  return `<div class="visit">
     <div class="stack tight">
-      <section class="card stack tight">
-        <div class="row between"><div><h3 style="font-size:17px">${esc(regionName(reg))}</h3><div class="small muted">${esc(tpl?.name || 'No template')}</div></div>
-          <div class="row" style="gap:6px">${modeToggle()}
-          <select id="rg_side_${reg.id}" data-rg="side" aria-label="Side" style="width:auto">${SIDES.map(s => `<option ${reg.side === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
-          ${delBtn('rg' + reg.id, 'delRegion', `data-id="${reg.id}"`).replace('>Delete<', '>Remove region<')}</div></div>
-        <div class="soap" role="tablist">${PARTS.map(([k, l], i) => `<button class="${S.part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="part" data-v="${k}" role="tab"><i>${k}</i>${tr(l)}<small class="muted">${counts[i][0]}/${counts[i][1]}</small></button>`).join('')}</div>
-        ${live.length > 1 ? `<div class="secnav" ${AR() ? 'dir="rtl"' : ''}>${live.map(s => `<button class="chip sm ${s === S.sec ? 'on' : ''}" data-act="sec" data-v="${esc(s)}">${doneIn(s) === of(s).length ? '✓ ' : ''}${esc(tSec(tpl, s))}</button>`).join('')}</div>` : ''}
-      </section>
-      ${S.part === 'A' ? autoFindingsHTML(reg, ev, tpl) + problemsHTML(reg) : ''}${S.part === 'P' ? planCard(reg, plan) : ''}
-      ${live.map(secHTML).join('') || (S.part === 'A' || S.quick ? '' : `<div class="empty">No fields in ${PARTS[pi][1]} for this area.</div>`)}
-      ${S.part === 'A' ? `<section class="card stack tight"><div class="sec-h"><h3>Clinician notes for ${esc(regionName(reg))}</h3></div><textarea id="rg_notes_${reg.id}" data-rg="notes" rows="3">${esc(reg.notes)}</textarea></section>` : ''}
-      <div class="row between">${pi > 0 ? `<button class="btn" data-act="part" data-v="${PARTS[pi - 1][0]}">‹ ${tr(PARTS[pi - 1][1])}</button>` : '<span></span>'}${pi < 3 ? `<button class="btn" data-act="part" data-v="${PARTS[pi + 1][0]}">${tr(PARTS[pi + 1][1])} ›</button>` : ''}</div>
+      <section class="card"><div class="row between"><div><h3 style="font-size:17px">${esc(regionName(reg))}</h3><div class="small muted">${esc(tpl?.name || 'No template')}</div></div>
+        <div class="row" style="gap:6px">${modeToggle()}<select id="rg_side_${reg.id}" data-rg="side" aria-label="Side" style="width:auto">${SIDES.map(s => `<option ${reg.side === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+        ${delBtn('rg' + reg.id, 'delRegion', `data-id="${reg.id}"`).replace('>Delete<', '>Remove<')}</div></div></section>
+      <div class="soapbar"><div class="soap" role="tablist">${PARTS.map(([k, l]) => { const its = of(k); return `<button class="${S.part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="part" data-v="${k}" role="tab"><i>${k}</i><span>${tr(l)}</span><small>${its.filter(i => answered(i.id, reg)).length}/${its.length}</small></button>`; }).join('')}</div></div>
+      ${PARTS.map(partHTML).join('')}
     </div>
     <aside class="card rail stack" id="rail">${railHTML(reg, ev, tpl)}</aside>
   </div>`;
@@ -964,7 +967,9 @@ function planCard(reg, plan) {
   const done = reg.tx || [], mods = reg.mods || [];
   return `<section class="card stack tight" style="--pc:var(--p)"><div class="row between"><span class="fh" style="color:var(--p)">${tr('Treatment plan')}</span><span class="tip">${tr('tick what you will do')}</span></div>
     ${plan.map(g => `<div class="stack" style="gap:2px"><b class="small">${esc(g.title)}</b>${g.items.map(x => `<label class="check tx"><input type="checkbox" data-act="txTick" data-v="${esc(x)}" ${done.includes(x) ? 'checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>`).join('') || `<span class="small muted">Suggestions appear once a diagnosis is likely or confirmed.</span>`}
-    <div class="stack" style="gap:5px"><span class="fh">${tr('Modalities & techniques')}</span><div class="chips">${S.cfg.modalities.map(m => `<button class="chip ${mods.includes(m) ? 'on' : ''}" data-act="listTog" data-k="mods" data-v="${esc(m)}">${esc(m)}</button>`).join('')}</div></div>
+    <div class="stack" style="gap:5px"><span class="fh">${tr('Modalities & techniques')}</span><div class="chips">${[...new Set([...S.cfg.modalities, ...(S.cfg.clinic.mods || []), ...mods])].map(m => `<button class="chip ${mods.includes(m) ? 'on' : ''}" data-act="listTog" data-k="mods" data-v="${esc(m)}">${esc(m)}</button>`).join('')}
+        <input type="text" id="rg_newmod_${reg.id}" data-newmod placeholder="+ ${tr('Add your own')}" style="max-width:170px;border-radius:999px;padding:4px 12px"></div></div>
+    <textarea id="rg_txn_${reg.id}" data-rg="txNote" rows="2" placeholder="${tr('Treatment notes: technique, dose, exercises')}">${esc(reg.txNote || '')}</textarea>
     <div class="row"><span class="fh">${tr('Sessions')}</span><input type="number" id="rg_ses_${reg.id}" data-rg="sessions" value="${esc(reg.sessions || '')}" inputmode="numeric" min="0" style="max-width:76px" aria-label="Number of sessions">
       <div class="chips">${FREQS.map(f => `<button class="chip ${reg.freq === f ? 'on' : ''}" data-act="setRg" data-k="freq" data-v="${f}">${f}</button>`).join('')}</div></div></section>`;
 }
@@ -972,7 +977,8 @@ function planReport(reg, plan, fields) {
   const done = reg.tx || [], body = done.length ? `<h4>Treatment</h4><ul>${done.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : plan.map(g => `<h4>${esc(g.title)} <span class="tag">suggested</span></h4><ul>${g.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`).join('');
   const mods = reg.mods?.length ? `<h4>Modalities & techniques</h4><div>${reg.mods.map(esc).join(', ')}</div>` : '';
   const ses = reg.sessions || reg.freq ? `<h4>Session plan</h4><div>${[reg.sessions ? esc(reg.sessions) + ' sessions' : '', esc(reg.freq || '')].filter(Boolean).join(', ')}</div>` : '';
-  return body || mods || ses || fields ? `<div><h3>Plan</h3>${body}${mods}${ses}${fields}</div>` : '';
+  const note = reg.txNote ? `<h4>Treatment notes</h4><div class="note">${esc(reg.txNote).replace(/\n/g, '<br>')}</div>` : '';
+  return body || mods || ses || note || fields ? `<div><h3>Plan</h3>${body}${mods}${note}${ses}${fields}</div>` : '';
 }
 function autoFindingsHTML(reg, ev, tpl) {
   return `<section class="card stack"><div class="sec-h"><h3>From the rules</h3><span class="small muted">Updates as you answer</span></div>
@@ -1244,7 +1250,8 @@ function viewSettings() {
     <section class="card stack"><div class="sec-h"><h3>Your clinic (shown on your reports)</h3></div>
       <label class="f"><span>Clinic name</span><input type="text" id="cl_n" data-b="clinic.name" value="${esc(c.clinic.name)}"></label>
       <label class="f"><span>Default clinician</span><input type="text" id="cl_t" data-b="clinic.therapist" value="${esc(c.clinic.therapist)}"></label>
-      <label class="f"><span>Exercise library link (for treatment, later)</span><input type="text" id="cl_u" data-b="clinic.exerciseUrl" value="${esc(c.clinic.exerciseUrl)}"></label></section>
+      <label class="f"><span>Exercise library link (for treatment, later)</span><input type="text" id="cl_u" data-b="clinic.exerciseUrl" value="${esc(c.clinic.exerciseUrl)}"></label>
+      <label class="f"><span>Your own treatment options (one per line)</span><textarea id="cl_m" data-b="clinic.mods" data-t="lines" rows="4">${esc((c.clinic.mods || []).join('\n'))}</textarea></label></section>
     ${!S.canAdmin ? '' : `<section class="card stack"><div class="sec-h"><h3>Subscriptions</h3></div>
       <label class="f"><span>How to subscribe (shown to guests and unsubscribed users)</span><input type="text" id="cf_contact" data-b="contact" value="${esc(c.contact || '')}" placeholder="e.g. WhatsApp 01xxxxxxxxx"></label></section>
     <section class="card stack"><div class="sec-h"><h3>Pick lists</h3><span class="small muted">One per line</span></div>
@@ -1316,8 +1323,8 @@ document.addEventListener('click', async e => {
     case 'delVisit': arm('v' + d.id, async () => { try { await deleteDoc('visits', d.id); S.visits = S.visits.filter(x => x.id !== d.id); toast('Visit deleted'); render(); } catch (err) { toast(failMsg(err)); } }); break;
     /* visit */
     case 'region': S.regionId = d.id; S.prevVisible = new Set(); S.lastVisKey = ''; render(); break;
-    case 'part': { S.part = d.v; S.prevVisible = new Set(); render(); const el = $('.soap'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 130; if (window.scrollY > y) window.scrollTo(0, Math.max(0, y)); } break; }
-    case 'jump': S.part = d.v; S.prevVisible = new Set(); render(); break;
+    case 'part': S.part = d.v; render(); document.getElementById('part_' + d.v)?.scrollIntoView({block:'start'}); break;
+case 'jump': S.part = d.v; render(); document.getElementById('part_' + d.v)?.scrollIntoView({block:'start'}); break;
     case 'picker': S.picker = S.picker ? null : {area:'', side:'Right', custom:''}; render(); break;
     case 'closePicker': S.picker = null; render(); break;
     case 'pickArea': { const a = S.picker.areas ||= [], k = a.indexOf(d.v); k < 0 ? a.push(d.v) : a.splice(k, 1); render(); break; }
@@ -1373,7 +1380,7 @@ case 'delRegion': arm('rg' + d.id, () => { const regs = S.visit.assessment.regio
     case 'addEv': tpl.diagnoses[+d.i].evidence.push({item:'', op:'eq', value:'', w:2}); touch(); render(); break;
     case 'delEv': tpl.diagnoses[+d.i].evidence.splice(+d.e, 1); touch(); render(); break;
     case 'allNeg': { const r = curRegion(), ev = evaluate(tplById(r.templateId), r);
-      ev.items.filter(i => i.type === 'test' && i.part === S.part && i.section === d.sec && !answered(i.id, r) && (!S.quick || i.quick || ev.required.has(i.id))).forEach(i => { const n = optionsOf(i).find(o => /^neg/i.test(o)); if (n) r.answers[i.id] = n; });
+      ev.items.filter(i => i.type === 'test' && i.part === (d.part || S.part) && i.section === d.sec && !answered(i.id, r) && (!S.quick || i.quick || ev.required.has(i.id))).forEach(i => { const n = optionsOf(i).find(o => /^neg/i.test(o)); if (n) r.answers[i.id] = n; });
       saveVisit(); render(); break; }
     case 'delDx': arm('dx' + tpl.diagnoses[+d.i].id, () => { tpl.diagnoses.splice(+d.i, 1); touch(); }); break;
     case 'ruleForDx': { const dx = tpl.diagnoses.find(x => x.id === d.id); addRuleAndGo(newRule('Criteria: ' + dx.name, [{item:'', op:'eq', value:''}], [{type:'diagnosis', target:dx.id}])); break; }
@@ -1406,9 +1413,17 @@ document.addEventListener('input', e => {
     if (d.b === 'clinic.name') { const h = $('.brand h1'); if (h) h.lastChild.textContent = v || 'Physio Assessment'; }
   }
 });
+/* the tab bar follows the part that is on screen */
+let scrollTick = 0;
+addEventListener('scroll', () => { if (scrollTick) return; scrollTick = requestAnimationFrame(() => { scrollTick = 0;
+  const parts = document.querySelectorAll('div.part'); if (!parts.length) return;
+  let cur = parts[0]; parts.forEach(p => { if (p.getBoundingClientRect().top <= 190) cur = p; });
+  const k = cur.id.slice(5); if (k === S.part) return;
+  S.part = k; document.querySelectorAll('.soap button').forEach(b => b.classList.toggle('on', b.dataset.v === k)); }); }, {passive:true});
 document.addEventListener('toggle', e => { if (e.target.classList?.contains('vd')) S.vd = e.target.open; }, true);
 document.addEventListener('change', e => {
   const t = e.target, d = t.dataset;
+  if (d.newmod !== undefined) { const v = t.value.trim(); if (v) { const own = S.cfg.clinic.mods ||= []; if (![...S.cfg.modalities, ...own].includes(v)) { own.push(v); touch(); } const r = curRegion(), l = r.mods ||= []; if (!l.includes(v)) l.push(v); saveVisit(); render(); } return; }
   if (d.dxpick !== undefined) { if (t.value) { const r = curRegion(); (r.confirmed ||= {})[t.value] = true; saveVisit(); render(); } return; }
   if (t.id === 'imp' && t.files?.[0]) {
     const fr = new FileReader(); fr.onload = () => { try { const j = JSON.parse(fr.result); if (!Array.isArray(j.templates)) throw 0; S.cfg.templates = normalize(j).templates; S.tplId = S.cfg.templates[0]?.id; touch(); toast('Templates imported'); render(); } catch { toast('That file isn’t a templates export from this app'); } }; fr.readAsText(t.files[0]); t.value = ''; return;
