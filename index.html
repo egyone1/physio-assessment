@@ -291,6 +291,60 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);box
 .uses{font-size:11.5px}
 .nprs button{padding:6px 0}
 .rail{gap:10px}
+/* ---- tighter layout, colour by SOAP part ---- */
+body{font-size:14.5px;line-height:1.45}
+#app{padding-bottom:84px}
+.top{padding-block:10px 8px}
+.tabs{margin-top:8px}
+.tab{padding:6px 14px}
+.page-h{margin-block:14px 10px}
+.page-h h2{font-size:22px}
+.card{padding:14px}
+.stack{gap:10px}
+.dash{gap:12px}
+.vd summary{cursor:pointer;font-weight:600;font-size:13.5px;color:var(--muted)}
+.vd{padding:10px 14px}
+.regions{gap:6px;padding-bottom:0}
+.region{min-width:120px;padding:7px 12px;border-radius:12px}
+.picker{padding:10px;gap:8px}
+.visit{--pc:var(--accent);gap:10px}
+.visit .card{padding:10px 12px}
+.soap{padding:4px;border-radius:12px}
+.soap button{padding:6px 4px;flex-direction:row;justify-content:center;gap:6px;align-items:baseline}
+.soap button.on{background:var(--pc);color:#fff;box-shadow:none}
+.soap button.on i,.soap button.on small{color:#fff}
+.secnav .chip.on{background:var(--pc);border-color:var(--pc);color:#fff}
+.sec{overflow:visible;border-inline-start:4px solid color-mix(in srgb,var(--pc) 35%,transparent)}
+.sec.open{border-color:var(--pc)}
+.sec-t{padding:7px 12px}
+.sec.open .sec-t{background:color-mix(in srgb,var(--pc) 9%,transparent)}
+.sec-n{width:22px;height:22px;background:color-mix(in srgb,var(--pc) 14%,transparent);color:var(--pc)}
+.sec .qgrid{padding:0 12px;column-gap:20px}
+.sec-f{padding:6px 12px;border-radius:0 0 var(--r) var(--r)}
+.q{padding-block:6px;gap:5px}
+.qgrid .q:last-child{padding-bottom:6px}
+.q-l{font-size:14px}
+.chips{gap:5px}
+.chip{min-height:30px;padding:4px 11px;border-radius:10px;font-size:13.5px}
+.nprs button{padding:4px 0}
+.nprs-l{display:none}
+input[type=text],input[type=number],input[type=date],input[type=search],input[type=tel],input[type=email],select,textarea{padding:7px 10px}
+textarea{min-height:44px}
+.num input{max-width:110px}
+.badge.test{font-size:9.5px;padding:1px 6px}
+.hint{position:relative}
+.hint summary{list-style:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;font-style:italic;color:var(--muted);cursor:pointer}
+.hint summary::-webkit-details-marker{display:none}
+.hint[open] summary{background:var(--pc);border-color:var(--pc);color:#fff}
+.hint>div{position:absolute;inset-inline-end:0;top:25px;z-index:6;width:min(300px,78vw);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;box-shadow:var(--shadow);font-size:12.5px;line-height:1.4;color:var(--muted);text-align:start}
+.dx{padding:9px 12px;gap:5px}
+.dxw>span{font-weight:700;color:var(--ink);font-size:14px}
+.dxw textarea{font-size:16px;min-height:84px;border:2px solid var(--a);background:color-mix(in srgb,var(--a) 6%,var(--surface))}
+.alert{padding:8px 12px}
+.finding{padding-left:10px}
+.rail{gap:8px}
+.bar{padding-block:7px}
+.bar .btn{padding:7px 14px}
 </style>
 </head>
 <body>
@@ -329,7 +383,7 @@ const OPS = {eq:'equals', neq:'does not equal', gt:'greater than', gte:'at least
 const NUMOPS = ['eq','neq','gt','gte','lt','lte','answered','empty'];
 const OPS_BY = {short:['has','answered','empty'], text:['has','answered','empty'], choice:NUMOPS, checklist:['has','nhas','answered','empty'], measurement:NUMOPS, number:NUMOPS, scale:NUMOPS, yesno:['eq','neq','answered','empty'], test:['eq','neq','answered','empty']};
 const WEIGHTS = [[3, 'Strongly for'], [2, 'For'], [1, 'Slightly for'], [-2, 'Against'], [-4, 'Strongly against']];
-const ACTS = {show:'Show field', hide:'Hide field', require:'Require field', warning:'Warning', finding:'Clinical finding', diagnosis:'Suggested diagnosis', treatment:'Treatment recommendation'};
+const ACTS = {show:'Show field', hide:'Hide field', warning:'Warning', finding:'Clinical finding', diagnosis:'Suggested diagnosis', treatment:'Treatment recommendation'};
 const SIDES = ['Right', 'Left', 'Bilateral', 'Midline'];
 const VISIT_TYPES = ['Initial assessment', 'Follow-up', 'Re-assessment', 'Discharge'];
 const TREATMENT_LATER = ['Treatment plan', 'Goals', 'Exercises', 'Modalities', 'Frequency', 'Duration', 'Home exercise program', 'Progress'];
@@ -405,9 +459,7 @@ function evaluate(tpl, region) {
     visible = next; if (same) break;
   }
   out.visible = visible; out.fired = fired;
-  tpl.items.forEach(i => i.required && visible.has(i.id) && out.required.add(i.id));
   fired.forEach(r => r.actions.forEach(a => {
-    if (a.type === 'require' && visible.has(a.target)) out.required.add(a.target);
     if (a.type === 'diagnosis' && a.target) { const d = out.dx.get(a.target) || {rules:[]}; d.rules.push(r); out.dx.set(a.target, d); }
     if (a.type === 'warning' && a.text && !out.warnings.includes(a.text)) out.warnings.push(a.text);
     if (a.type === 'finding' && a.text && !out.findings.includes(a.text)) out.findings.push(a.text);
@@ -622,7 +674,7 @@ function render() {
 const fmtMs = ms => ms ? new Date(ms).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : '—';
 function accountNote() {
   const contact = S.cfg.contact ? ` ${esc(S.cfg.contact)}` : '';
-  if (S.role === 'guest') return `<div class="alert info"><span>Guest mode: run assessments and download reports freely. Patients are kept in this browser only. Sign in and subscribe to keep them in your own account.${contact}</span></div>`;
+  if (S.role === 'guest') return `<div class="alert info"><span>Guest: patients stay in this browser. Sign in and subscribe to save them to your account.${contact}</span></div>`;
   const st = subState();
   if (st === 'none') return `<div class="alert info"><span>Signed in as ${esc(S.user.email)}. Your subscription isn’t active yet, so patients stay in this browser. Ask the admin to activate it.${contact}</span></div>`;
   if (st === 'expired') return `<div class="alert warn"><span>Your subscription ended on ${fmtMs(S.sub.expires)}. Your records are still readable; renew to add or edit.${contact}</span></div>`;
@@ -776,25 +828,21 @@ function viewVisit() {
   const preview = v._preview;
   return `<div class="page-h"><div><div class="crumb">${preview ? `<button data-act="go" data-v="builder">Builder</button> / Preview` : `<button data-act="go" data-v="patients">Patients</button> / <button data-act="openPatient" data-id="${v.patientId}">${esc(p.name)}</button> / Visit`}</div>
       <h2>${preview ? 'Template preview' : esc(p.name)}</h2>${preview ? `<div class="small muted">Nothing here is saved. Rules run exactly as in a real visit.</div>` : ''}</div></div>
-  ${preview ? '' : `<section class="card stack" style="margin-bottom:16px">
-    <div class="grid2">
+  ${preview ? '' : `<details class="card vd" ${S.vd ? 'open' : ''} style="margin-bottom:8px"><summary>Visit details · ${fmtDate(v.date)} · ${esc(v.type)}${v.clinician ? ' · ' + esc(v.clinician) : ''}</summary>
+    <div class="grid2" style="margin-top:10px">
       <label class="f"><span>Visit date</span><input type="date" id="vi_date" data-vi="date" value="${esc(v.date)}"></label>
       <label class="f"><span>Clinician</span><input type="text" id="vi_clin" data-vi="clinician" value="${esc(v.clinician)}"></label>
       <label class="f"><span>Visit type</span><select id="vi_type" data-vi="type">${VISIT_TYPES.map(o => `<option ${v.type === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
       <label class="f"><span>Follow-up date</span><input type="date" id="vi_fu" data-vi="followUp" value="${esc(v.followUp)}"></label>
-    </div></section>`}
-  <section class="card stack" style="margin-bottom:16px">
-    <div class="sec-h"><h3>Assessment regions</h3><span class="small muted">Each region keeps its own data</span></div>
+    </div></details>`}
+  <section class="card stack tight" style="margin-bottom:8px">
     <div class="regions" role="tablist">${v.assessment.regions.map(r => { const ev = evaluate(tplById(r.templateId), r); return `<button class="region ${r.id === reg?.id ? 'on' : ''}" data-act="region" data-id="${r.id}" role="tab" aria-selected="${r.id === reg?.id}">
       <b>${esc(regionName(r))}</b><span>${ev.rank.length ? esc(ev.rank[0].d.name) : `${[...ev.visible].filter(id => answered(id, r)).length} answered`}${ev.warnings.length ? ' · ⚠' : ''}</span></button>`; }).join('')}
       <button class="region add" data-act="picker">+ Add region</button></div>
     ${S.picker ? pickerHTML() : ''}
   </section>
   ${reg ? regionHTML(reg) : `<div class="empty">Add the first region to start the assessment.</div>`}
-  ${preview ? '' : `<section class="later" style="margin-top:16px"><div class="row between"><h3 style="font-size:15px">Treatment</h3><span class="badge">Coming in the next stage</span></div>
-    <div class="small muted">Treatment is planned separately after the assessment, for the whole visit. This visit already has a place reserved for:</div>
-    <ul>${TREATMENT_LATER.map(t => `<li>${t}</li>`).join('')}</ul></section>
-  <section class="card stack" style="margin-top:16px"><div class="sec-h"><h3>General visit notes</h3></div>
+  ${preview ? '' : `<section class="card stack" style="margin-top:16px"><div class="sec-h"><h3>General visit notes</h3></div>
     <textarea id="vi_notes" data-vi="notes" rows="3" placeholder="Shown at the end of the report">${esc(v.notes)}</textarea></section>`}
   <div class="bar"><div class="in">
     ${preview ? `<button class="btn pri" data-act="go" data-v="builder">Back to builder</button><button class="btn" data-act="resetPreview">Clear answers</button>` :
@@ -805,17 +853,15 @@ function viewVisit() {
 }
 function pickerHTML() {
   const pk = S.picker, groups = [...new Set(S.cfg.bodyAreas.map(a => a.group || 'Other'))];
-  const area = pk.custom.trim() || pk.area;
+  const picked = [...(pk.areas || []), ...(pk.custom.trim() ? [pk.custom.trim()] : [])];
   return `<div class="picker">
-    <div class="row between"><b>Choose a body area</b><button class="btn sm ghost" data-act="closePicker">Cancel</button></div>
-    ${groups.map(g => `<div class="pgroup"><span class="small muted">${esc(g)}</span><div class="chips">${S.cfg.bodyAreas.filter(a => (a.group || 'Other') === g).map(a => `<button class="chip sm ${pk.area === a.name && !pk.custom ? 'on' : ''}" data-act="pickArea" data-v="${esc(a.name)}">${esc(a.name)}</button>`).join('')}</div></div>`).join('')}
-    <label class="f" style="max-width:320px"><span>Or type another area</span><input type="text" id="pk_custom" data-pk="custom" value="${esc(pk.custom)}" placeholder="e.g. Sternoclavicular joint"></label>
-    <div class="pgroup"><span class="small muted">Side</span><div class="chips">${SIDES.map(s => `<button class="chip sm ${pk.side === s ? 'on' : ''}" data-act="pickSide" data-v="${s}">${s}</button>`).join('')}</div></div>
-    ${S.cfg.templates.length > 1 ? `<label class="f" style="max-width:320px"><span>Template</span><select id="pk_tpl" data-pk="templateId">${S.cfg.templates.map(t => `<option value="${t.id}" ${(pk.templateId || tplFor(area)?.id) === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>` : ''}
-    <div><button class="btn pri" data-act="addRegion" ${area ? '' : 'disabled'}>Add ${esc([pk.side !== 'Midline' ? pk.side : '', area].filter(Boolean).join(' ') || 'region')}</button></div>
+    <div class="row between"><b>Choose one or more areas</b><button class="btn sm ghost" data-act="closePicker">Cancel</button></div>
+    ${groups.map(g => `<div class="pgroup"><span class="small muted">${esc(g)}</span><div class="chips">${S.cfg.bodyAreas.filter(a => (a.group || 'Other') === g).map(a => `<button class="chip sm ${pk.areas?.includes(a.name) ? 'on' : ''}" data-act="pickArea" data-v="${esc(a.name)}">${pk.areas?.includes(a.name) ? '✓ ' : ''}${esc(a.name)}</button>`).join('')}</div></div>`).join('')}
+    <div class="row"><input type="text" id="pk_custom" data-pk="custom" value="${esc(pk.custom)}" placeholder="Other area" style="max-width:220px">
+      <span class="small muted">Side</span><div class="chips">${SIDES.filter(s => s !== 'Midline').map(s => `<button class="chip sm ${pk.side === s ? 'on' : ''}" data-act="pickSide" data-v="${s}">${s}</button>`).join('')}</div>
+      <button class="btn pri" data-act="addRegion" ${picked.length ? '' : 'disabled'}>Add ${picked.length > 1 ? picked.length + ' regions' : esc(picked[0] || 'region')}</button></div>
   </div>`;
-}
-function regionHTML(reg) {
+}function regionHTML(reg) {
   const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg), plan = planFor(reg, ev, tpl), uses = usesMap(tpl);
   /* Quick mode keeps the key questions; anything required or already answered stays visible. */
   const shown = i => !S.quick || i.quick || ev.required.has(i.id) || answered(i.id, reg);
@@ -835,7 +881,7 @@ function regionHTML(reg) {
         <div class="row between sec-f">${tests > 1 ? `<button class="btn sm" data-act="allNeg" data-sec="${esc(sec)}">${tr('Rest negative')}</button>` : '<span></span>'}
           ${next ? `<button class="btn sm pri" data-act="sec" data-v="${esc(next)}">${tr('Next')}: ${esc(tSec(tpl, next))} ›</button>` : pi < 3 ? `<button class="btn sm pri" data-act="part" data-v="${PARTS[pi + 1][0]}">${tr(PARTS[pi + 1][1])} ›</button>` : ''}</div>` : ''}
     </section>`; };
-  return `<div class="visit">
+  return `<div class="visit" style="--pc:${PART_COLOR[S.part]}">
     <div class="stack tight">
       <section class="card stack tight">
         <div class="row between"><div><h3 style="font-size:17px">${esc(regionName(reg))}</h3><div class="small muted">${esc(tpl?.name || 'No template')}</div></div>
@@ -889,8 +935,8 @@ function rankHTML(reg, ev, tpl, full) {
       ${confirm(x.d.id, ok)}</div>`; };
   return (ev.rank.length ? ev.rank.slice(0, full ? 6 : 3).map(row).join('') : `<span class="small muted">Nothing suggested yet. The ranking builds as you answer.</span>`)
     + manual.map(d => `<div class="dx ok"><div class="dx-n"><span>${esc(d.name)}</span><span class="code">Chosen by clinician</span></div>${confirm(d.id, true)}</div>`).join('')
-    + (full ? `<div class="grid2"><label class="f"><span>Choose another diagnosis</span><select id="dxpick_${reg.id}" data-dxpick><option value="">Select from all diagnoses</option>${tpl.diagnoses.filter(d => !reg.confirmed?.[d.id]).map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
-      <label class="f"><span>Or write a diagnosis</span><input type="text" id="rg_dxo_${reg.id}" data-rg="dxOther" value="${esc(reg.dxOther || '')}"></label></div>` : '');
+    + (full ? `<div class="grid2"><label class="f"><span>Choose another diagnosis</span><select id="dxpick_${reg.id}" data-dxpick><option value="">Select from all diagnoses</option>${tpl.diagnoses.filter(d => !reg.confirmed?.[d.id]).map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label></div>
+      <label class="f dxw"><span>Clinician’s diagnosis</span><textarea id="rg_dxo_${reg.id}" data-rg="dxOther" rows="3" placeholder="Write the diagnosis in your own words">${esc(reg.dxOther || '')}</textarea></label>` : '');
 }
 function dxReport(reg, ev, chosen) {
   const code = d => d.code ? ` <span class="pm">${esc(d.code)}</span>` : '';
@@ -900,12 +946,7 @@ function dxReport(reg, ev, chosen) {
     <div class="pm" style="font-size:11.5px">Based on: ${[...(ev.dx.get(x.d.id)?.rules || []).map(r => r.name), ...x.why].map(esc).join('; ')}</div></li>`).join('')}</ul>` : `<div class="pm">No suggested diagnosis from the findings.</div>`;
 }
 function railHTML(reg, ev, tpl) {
-  const req = [...ev.required], done = req.filter(id => answered(id, reg)).length;
-  const missing = req.filter(id => !answered(id, reg)).map(id => tpl.items.find(i => i.id === id)).filter(Boolean);
-  return `<div class="fh" style="color:var(--ink)">${esc(regionName(reg))}</div>
-    <div><div class="row between"><span class="small">Required fields</span><span class="small muted">${done}/${req.length}</span></div>
-      <div class="meter" style="margin-top:6px"><i style="width:${req.length ? done / req.length * 100 : 100}%"></i></div>
-      ${missing.length ? `<div class="small muted" style="margin-top:6px">Missing: ${missing.slice(0, 4).map(i => `<a href="#" data-act="jump" data-v="${i.part}">${esc(i.label)}</a>`).join(', ')}${missing.length > 4 ? '…' : ''}</div>` : ''}</div>
+    return `<div class="fh" style="color:var(--ink)">${esc(regionName(reg))}</div>
     ${ev.warnings.length ? `<div class="stack" style="gap:6px"><span class="fh">Warnings</span>${ev.warnings.map(w => `<div class="alert warn"><span aria-hidden="true">⚠</span><span>${esc(w)}</span></div>`).join('')}</div>` : ''}
     ${ev.findings.length ? `<div class="stack" style="gap:6px"><span class="fh">Clinical findings</span>${ev.findings.map(f => `<div class="finding small">${esc(f)}</div>`).join('')}</div>` : ''}
     <div class="stack" style="gap:6px"><span class="fh">Diagnosis ranking</span>${rankHTML(reg, ev, tpl, false)}</div>
@@ -933,9 +974,9 @@ function qHTML(it, reg, ev, appear, uses) {
     input = `<textarea id="${ida}" data-ans="${it.id}" rows="2">${esc(v ?? '')}</textarea>`;
   }
   return `<div class="q ${appear ? 'appear' : ''} ${['text','checklist','scale','short'].includes(it.type) ? 'wide' : ''}">
-    <div class="q-h"><div class="q-l">${esc(tL(it))}${req ? ` <span class="star" title="Required">*</span>` : ''}${it.unit && it.type === 'choice' ? ` <span class="muted small">(${esc(it.unit)})</span>` : ''}</div>
-      <div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}</div></div>
-    ${tH(it) ? `<div class="help">${esc(tH(it))}</div>` : ''}${input}${uses?.[it.id] ? `<div class="uses">${tr('Helps decide')}: ${esc(uses[it.id])}</div>` : ''}</div>`;
+    <div class="q-h"><div class="q-l">${esc(tL(it))}${it.unit && it.type === 'choice' ? ` <span class="muted small">(${esc(it.unit)})</span>` : ''}</div>
+      <div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : ''}${tH(it) || uses?.[it.id] ? `<details class="hint"><summary aria-label="About this question">i</summary><div>${esc(tH(it) || '')}${uses?.[it.id] ? `<div class="uses">${tr('Helps decide')}: ${esc(uses[it.id])}</div>` : ''}</div></details>` : ''}</div></div>
+    ${input}</div>`;
 }
 
 /* ----- report ----- */
@@ -1022,7 +1063,7 @@ function bFields(tpl, ti) {
   const idxs = tpl.items.map((it, i) => [it, i]).filter(([it]) => it.part === part);
   const orphans = idxs.filter(([it]) => !secs.includes(it.section));
   const itemRow = ([it, i], list, k) => { const open = S.open === it.id; return `<div class="li ${open ? 'open' : ''}"><div class="li-h">${mvBtns(`data-k="item" data-i="${i}"`, k > 0, k < list.length - 1)}
-      <div class="t"><b>${esc(it.label || 'Untitled')}</b><div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : `<span class="badge">${TYPES[it.type]}</span>`}${it.areas?.length ? `<span class="badge">${esc(it.areas.join(', '))}</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}${it.required ? `<span class="badge req">Required</span>` : ''}${it.quick ? `<span class="badge good">Quick</span>` : ''}</div></div>
+      <div class="t"><b>${esc(it.label || 'Untitled')}</b><div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : `<span class="badge">${TYPES[it.type]}</span>`}${it.areas?.length ? `<span class="badge">${esc(it.areas.join(', '))}</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}${it.quick ? `<span class="badge good">Quick</span>` : ''}</div></div>
       <button class="btn sm" data-act="toggle" data-id="${it.id}">${open ? 'Close' : 'Edit'}</button></div>${open ? itemEditor(tpl, ti, it, i) : ''}</div>`; };
   return `<div class="stack">
     <div class="soap" style="max-width:560px">${PARTS.map(([k, l]) => `<button class="${part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="bpart" data-v="${k}"><i>${k}</i>${l}<small class="muted">${tpl.items.filter(i => i.part === k).length} fields</small></button>`).join('')}</div>
@@ -1052,7 +1093,6 @@ function itemEditor(tpl, ti, it, i) {
       <label class="f"><span>Arabic hint</span><input type="text" dir="rtl" id="${p}.ar.help" data-b="${p}.ar.help" value="${esc(it.ar?.help || '')}"></label></div>
     ${['choice','checklist','test'].includes(it.type) ? `<label class="f"><span>Arabic options (one per line, same order as above)</span><textarea dir="rtl" id="${p}.ar.options" data-b="${p}.ar.options" data-t="lines" rows="4">${esc((it.ar?.options || []).join('\n'))}</textarea></label>` : ''}
     <div class="stack" style="gap:6px"><span class="small muted" style="font-weight:600">Only for these body areas (none = all)</span><div class="chips">${S.cfg.bodyAreas.map(a => `<button class="chip sm ${it.areas?.includes(a.name) ? 'on' : ''}" data-act="itemArea" data-i="${i}" data-v="${esc(a.name)}">${esc(a.name)}</button>`).join('')}</div></div>
-    <label class="check"><input type="checkbox" id="${p}.required" data-b="${p}.required" data-t="bool" ${it.required ? 'checked' : ''}> Required</label>
     <label class="check"><input type="checkbox" id="${p}.quick" data-b="${p}.quick" data-t="bool" ${it.quick ? 'checked' : ''}> Show in Quick assessment</label>
     ${usedIn.length ? `<div class="small muted">Used in rules: ${usedIn.map(r => esc(r.name)).join(', ')}</div>` : ''}
     <div class="row"><button class="btn sm" data-act="ruleFor" data-id="${it.id}">+ Rule that shows this</button><button class="btn sm" data-act="dupItem" data-i="${i}">Duplicate</button>${delBtn('it' + it.id, 'delItem', `data-i="${i}"`)}</div>
@@ -1196,12 +1236,12 @@ document.addEventListener('click', async e => {
     case 'jump': S.part = d.v; S.prevVisible = new Set(); render(); break;
     case 'picker': S.picker = S.picker ? null : {area:'', side:'Right', custom:''}; render(); break;
     case 'closePicker': S.picker = null; render(); break;
-    case 'pickArea': S.picker.area = d.v; S.picker.custom = ''; S.picker.side = isMidline(d.v) ? 'Midline' : (S.picker.side === 'Midline' ? 'Right' : S.picker.side); S.picker.templateId = ''; render(); break;
+    case 'pickArea': { const a = S.picker.areas ||= [], k = a.indexOf(d.v); k < 0 ? a.push(d.v) : a.splice(k, 1); render(); break; }
     case 'pickSide': S.picker.side = d.v; render(); break;
-    case 'addRegion': { const pk = S.picker, area = pk.custom.trim() || pk.area; if (!area) return;
-      const r = {id:uid('rg'), area, side:pk.side, templateId:pk.templateId || tplFor(area)?.id, answers:{}, confirmed:{}, notes:'', attachments:[]};
-      S.visit.assessment.regions.push(r); S.regionId = r.id; S.part = 'S'; S.picker = null; S.prevVisible = new Set(); saveVisit(); render(); break; }
-    case 'delRegion': arm('rg' + d.id, () => { const regs = S.visit.assessment.regions; S.visit.assessment.regions = regs.filter(r => r.id !== d.id); S.regionId = S.visit.assessment.regions[0]?.id; saveVisit(); }); break;
+    case 'addRegion': { const pk = S.picker, list = [...(pk.areas || []), ...(pk.custom.trim() ? [pk.custom.trim()] : [])]; if (!list.length) return;
+      const made = list.map(area => ({id:uid('rg'), area, side:isMidline(area) ? 'Midline' : pk.side === 'Midline' ? 'Right' : pk.side, templateId:tplFor(area)?.id, answers:{}, confirmed:{}, notes:'', attachments:[]}));
+      S.visit.assessment.regions.push(...made); S.regionId = made[0].id; S.part = 'S'; S.picker = null; S.prevVisible = new Set(); saveVisit(); render(); break; }
+case 'delRegion': arm('rg' + d.id, () => { const regs = S.visit.assessment.regions; S.visit.assessment.regions = regs.filter(r => r.id !== d.id); S.regionId = S.visit.assessment.regions[0]?.id; saveVisit(); }); break;
     case 'ans': { const r = curRegion(), cur = r.answers[d.id]; if (String(cur) === d.v) delete r.answers[d.id]; else r.answers[d.id] = d.v; saveVisit(); render(); break; }
     case 'ansm': { const r = curRegion(), arr = Array.isArray(r.answers[d.id]) ? [...r.answers[d.id]] : []; const k = arr.indexOf(d.v); k < 0 ? arr.push(d.v) : arr.splice(k, 1); r.answers[d.id] = arr; saveVisit(); render(); break; }
     case 'confirm': { const r = curRegion(); r.confirmed ||= {}; r.confirmed[d.id] = b.checked; saveVisit(); render(); break; }
@@ -1282,6 +1322,7 @@ document.addEventListener('input', e => {
     if (d.b === 'clinic.name') { const h = $('.brand h1'); if (h) h.lastChild.textContent = v || 'Physio Assessment'; }
   }
 });
+document.addEventListener('toggle', e => { if (e.target.classList?.contains('vd')) S.vd = e.target.open; }, true);
 document.addEventListener('change', e => {
   const t = e.target, d = t.dataset;
   if (d.dxpick !== undefined) { if (t.value) { const r = curRegion(); (r.confirmed ||= {})[t.value] = true; saveVisit(); render(); } return; }
