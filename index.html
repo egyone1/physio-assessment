@@ -6,7 +6,7 @@
 <title>Physio Assessment Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Readex+Pro:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Readex+Pro:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: clinic workbench. Top bar + tabs; dashboard grid; visit = region tabs + SOAP tabs + sticky summary rail */
 :root{
@@ -266,6 +266,31 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);box
 .qgrid .q:last-child{border-bottom:1px dashed var(--line);padding-bottom:14px}
 .cond.ev{grid-template-columns:minmax(0,2fr) minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) auto}
 @media (max-width:640px){.cond.ev{grid-template-columns:1fr 1fr auto}.cond.ev>:first-child{grid-column:1/-1}}
+/* ---- compact visit: one section open at a time ---- */
+:root{--f-body:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif}
+.stack.tight{gap:8px}
+.visit{gap:12px}
+.visit .card{padding:14px 16px}
+.sec{padding:0!important;overflow:hidden;scroll-margin:120px 0 90px}
+.sec-t{width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;border:0;background:none;cursor:pointer;text-align:start;color:inherit}
+.sec-t b{flex:1;font-family:var(--f-display);font-size:15px;font-weight:600}
+.sec-n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--muted);flex:none}
+.sec-n.part{background:var(--warn-soft);color:var(--warn)}
+.sec-n.done{background:var(--good-soft);color:var(--good)}
+.chev{color:var(--muted)}
+.sec.open{border-color:var(--accent)}
+.sec.open .sec-t{border-bottom:1px solid var(--line)}
+.sec .qgrid{padding:0 14px}
+.sec-f{padding:8px 14px;border-top:1px solid var(--line);background:var(--surface-2)}
+.secnav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.secnav .chip{flex:none;min-height:30px;padding:4px 12px}
+.q{padding-block:9px;gap:6px}
+.qgrid .q:last-child{padding-bottom:9px}
+.help{font-size:12.5px;line-height:1.4}
+.chip{min-height:34px;padding:6px 13px}
+.uses{font-size:11.5px}
+.nprs button{padding:6px 0}
+.rail{gap:10px}
 </style>
 </head>
 <body>
@@ -289,6 +314,14 @@ const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getT
 const fmtDate = d => { if (!d) return '—'; try { return new Date(d + (String(d).length === 10 ? 'T12:00' : '')).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}); } catch { return d; } };
 const daysFromToday = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
 
+/* Content language: questions, hints, options and section names can carry an Arabic version; stored answers stay in English so rules keep working. */
+const UI_AR = {Subjective:'الشكوى', Objective:'الفحص', Assessment:'التقييم', Plan:'الخطة', Quick:'سريع', Full:'كامل', Next:'التالي', 'Rest negative':'الباقي سلبي', 'Helps decide':'يفيد في', Summary:'الخلاصة', 'No pain':'لا ألم', 'Worst imaginable':'أسوأ ألم'};
+const AR = () => S.lang === 'ar';
+const tr = s => AR() ? UI_AR[s] || s : s;
+const tL = it => AR() && it.ar?.label || it.label;
+const tH = it => AR() && it.ar?.help || it.help;
+const tO = (it, o) => { if (!AR() || !it.ar?.options?.length) return o; const i = optionsOf(it).indexOf(o); return i >= 0 && it.ar.options[i] || o; };
+const tSec = (tpl, s) => AR() && tpl?.secAr?.[s] || s;
 const PARTS = [['S','Subjective'],['O','Objective'],['A','Assessment'],['P','Plan']];
 const PART_COLOR = {S:'var(--s)', O:'var(--o)', A:'var(--a)', P:'var(--p)'};
 const TYPES = {short:'Question', choice:'Choice', checklist:'Checklist', measurement:'Measurement', text:'Text', number:'Number', yesno:'Yes / No', test:'Special test', scale:'Pain scale 0–10'};
@@ -311,7 +344,7 @@ function blankTemplate(name) { return {id:uid('tpl'), name, areas:[], sections:{
 function normalize(c) {
   c = c && typeof c === 'object' ? c : {};
   const out = {schema:3, clinic:Object.assign({name:'', therapist:'', exerciseUrl:''}, c.clinic || {}), bodyAreas:c.bodyAreas || [], templates:c.templates || [], contact:c.contact || '', updatedAt:c.updatedAt || 0};
-  out.templates.forEach(t => { t.sections ||= {S:[],O:[],A:[],P:[]}; PARTS.forEach(([p]) => t.sections[p] ||= []); t.items ||= []; t.rules ||= []; t.diagnoses ||= []; t.areas ||= []; t.diagnoses.forEach(d => { d.evidence ||= []; d.treatment ||= []; }); });
+  out.templates.forEach(t => { t.sections ||= {S:[],O:[],A:[],P:[]}; PARTS.forEach(([p]) => t.sections[p] ||= []); t.items ||= []; t.rules ||= []; t.diagnoses ||= []; t.areas ||= []; t.secAr ||= {}; t.diagnoses.forEach(d => { d.evidence ||= []; d.treatment ||= []; }); });
   return out;
 }
 
@@ -545,6 +578,7 @@ function onUser(u) {
   }, () => useLocal()));
 }
 function boot() {
+  S.lang = LS.get('pf3_lang', /^ar/i.test(navigator.language || '') ? 'ar' : 'en'); S.quick = LS.get('pf3_quick', false);
   S.cfg = normalize(clone(EXAMPLE)); render();
   if (!FIREBASE_CONFIG.apiKey || !window.firebase) { ready.content = 2; return onUser(null); }
   firebase.initializeApp(FIREBASE_CONFIG); S.fdb = firebase.firestore();
@@ -575,7 +609,7 @@ function render() {
   <header class="top">
     <div class="brand">
       <h1><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h3l2-5 4 10 2-5h3"/></svg></span>${esc(S.cfg.clinic.name || 'Physio Assessment')}</h1>
-      <div class="row"><div class="status" id="status">${statusHTML()}</div>${S.loaded && window.firebase && !S.user ? `<button class="btn sm" data-act="signIn">Sign in</button>` : ''}</div>
+      <div class="row"><div class="status" id="status">${statusHTML()}</div><button class="btn sm" data-act="lang" title="Question language">${AR() ? 'English' : 'عربي'}</button>${S.loaded && window.firebase && !S.user ? `<button class="btn sm" data-act="signIn">Sign in</button>` : ''}</div>
     </div>
     <nav class="tabs">${tabs.map(([k, l]) => `<button class="tab ${activeTab === k ? 'on' : ''}" data-act="go" data-v="${k}">${l}</button>`).join('')}</nav>
   </header>
@@ -764,7 +798,7 @@ function viewVisit() {
     <textarea id="vi_notes" data-vi="notes" rows="3" placeholder="Shown at the end of the report">${esc(v.notes)}</textarea></section>`}
   <div class="bar"><div class="in">
     ${preview ? `<button class="btn pri" data-act="go" data-v="builder">Back to builder</button><button class="btn" data-act="resetPreview">Clear answers</button>` :
-    `<button class="btn pri" data-act="openReport" data-id="${v.id}">View report</button>
+    `<button class="btn pri" data-act="jump" data-v="A">${tr('Summary')}</button><button class="btn" data-act="openReport" data-id="${v.id}">View report</button>
     <button class="btn" data-act="toggleDone">${v.status === 'Completed' ? 'Reopen visit' : 'Mark visit complete'}</button>
     <button class="btn ghost" data-act="openPatient" data-id="${v.patientId}">Patient profile</button>`}
   </div></div>`;
@@ -783,32 +817,42 @@ function pickerHTML() {
 }
 function regionHTML(reg) {
   const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg), plan = planFor(reg, ev, tpl), uses = usesMap(tpl);
-  const counts = PARTS.map(([k]) => { const its = ev.items.filter(i => i.part === k); return [its.filter(i => answered(i.id, reg)).length, its.length]; });
-  const items = ev.items.filter(i => i.part === S.part);
+  /* Quick mode keeps the key questions; anything required or already answered stays visible. */
+  const shown = i => !S.quick || i.quick || ev.required.has(i.id) || answered(i.id, reg);
+  const counts = PARTS.map(([k]) => { const its = ev.items.filter(i => i.part === k && shown(i)); return [its.filter(i => answered(i.id, reg)).length, its.length]; });
+  const items = ev.items.filter(i => i.part === S.part && shown(i));
   const secs = [...(tpl?.sections[S.part] || [])]; items.forEach(i => !secs.includes(i.section) && secs.push(i.section));
+  const live = secs.filter(s => items.some(i => i.section === s)), of = s => items.filter(i => i.section === s), doneIn = s => of(s).filter(i => answered(i.id, reg)).length;
+  if (!live.includes(S.sec)) S.sec = live.find(s => doneIn(s) < of(s).length) || live[0] || null;
   const prev = S.prevVisible, appeared = id => prev.size && !prev.has(id);
   S.prevVisible = ev.visible; S.lastVisKey = [...ev.visible].join(',');
+  const pi = PARTS.findIndex(p => p[0] === S.part);
+  const secHTML = (sec, k) => { const its = of(sec), done = doneIn(sec), open = sec === S.sec, next = live[k + 1];
+    const tests = its.filter(i => i.type === 'test' && !answered(i.id, reg)).length;
+    return `<section class="card sec ${open ? 'open' : ''}">
+      <button class="sec-t" data-act="sec" data-v="${esc(sec)}" aria-expanded="${open}"><span class="sec-n ${done === its.length ? 'done' : done ? 'part' : ''}">${done === its.length ? '✓' : k + 1}</span><b>${esc(tSec(tpl, sec))}</b><span class="small muted">${done}/${its.length}</span><span class="chev" aria-hidden="true">${open ? '▾' : '▸'}</span></button>
+      ${open ? `<div class="qgrid" ${AR() ? 'dir="rtl"' : ''}>${its.map(it => qHTML(it, reg, ev, appeared(it.id), uses)).join('')}</div>
+        <div class="row between sec-f">${tests > 1 ? `<button class="btn sm" data-act="allNeg" data-sec="${esc(sec)}">${tr('Rest negative')}</button>` : '<span></span>'}
+          ${next ? `<button class="btn sm pri" data-act="sec" data-v="${esc(next)}">${tr('Next')}: ${esc(tSec(tpl, next))} ›</button>` : pi < 3 ? `<button class="btn sm pri" data-act="part" data-v="${PARTS[pi + 1][0]}">${tr(PARTS[pi + 1][1])} ›</button>` : ''}</div>` : ''}
+    </section>`; };
   return `<div class="visit">
-    <div class="stack">
-      <section class="card stack">
-        <div class="row between"><div><h3 style="font-size:18px">${esc(regionName(reg))}</h3><div class="small muted">${esc(tpl?.name || 'No template')}</div></div>
-          <div class="row" style="gap:6px"><select id="rg_side_${reg.id}" data-rg="side" aria-label="Side" style="width:auto">${SIDES.map(s => `<option ${reg.side === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+    <div class="stack tight">
+      <section class="card stack tight">
+        <div class="row between"><div><h3 style="font-size:17px">${esc(regionName(reg))}</h3><div class="small muted">${esc(tpl?.name || 'No template')}</div></div>
+          <div class="row" style="gap:6px"><span class="toggle" title="Quick shows the key questions only"><button class="${S.quick ? 'on' : ''}" data-act="mode" data-v="1">${tr('Quick')}</button><button class="${S.quick ? '' : 'on'}" data-act="mode" data-v="">${tr('Full')}</button></span>
+          <select id="rg_side_${reg.id}" data-rg="side" aria-label="Side" style="width:auto">${SIDES.map(s => `<option ${reg.side === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
           ${delBtn('rg' + reg.id, 'delRegion', `data-id="${reg.id}"`).replace('>Delete<', '>Remove region<')}</div></div>
-        <div class="soap" role="tablist">${PARTS.map(([k, l], i) => `<button class="${S.part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="part" data-v="${k}" role="tab"><i>${k}</i>${l}<small class="muted">${counts[i][0]}/${counts[i][1]}</small></button>`).join('')}</div>
+        <div class="soap" role="tablist">${PARTS.map(([k, l], i) => `<button class="${S.part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="part" data-v="${k}" role="tab"><i>${k}</i>${tr(l)}<small class="muted">${counts[i][0]}/${counts[i][1]}</small></button>`).join('')}</div>
+        ${live.length > 1 ? `<div class="secnav" ${AR() ? 'dir="rtl"' : ''}>${live.map(s => `<button class="chip sm ${s === S.sec ? 'on' : ''}" data-act="sec" data-v="${esc(s)}">${doneIn(s) === of(s).length ? '✓ ' : ''}${esc(tSec(tpl, s))}</button>`).join('')}</div>` : ''}
       </section>
       ${S.part === 'A' ? autoFindingsHTML(reg, ev, tpl) : ''}${S.part === 'P' ? txHTML(plan) : ''}
-      ${secs.map(sec => { const its = items.filter(i => i.section === sec); if (!its.length) return '';
-        const open = its.filter(i => i.type === 'test' && !answered(i.id, reg)).length;
-        return `<section class="card"><div class="sec-h"><h3>${esc(sec)}</h3><span class="row" style="gap:8px">${open > 1 ? `<button class="btn sm" data-act="allNeg" data-sec="${esc(sec)}">Rest negative</button>` : ''}<span class="small muted">${its.filter(i => answered(i.id, reg)).length}/${its.length}</span></span></div><div class="qgrid">${its.map(it => qHTML(it, reg, ev, appeared(it.id), uses)).join('')}</div></section>`; }).join('') || (S.part === 'A' ? '' : `<div class="empty">No fields in ${PARTS.find(p => p[0] === S.part)[1]} for this area.</div>`)}
-      ${S.part === 'A' ? `<section class="card stack"><div class="sec-h"><h3>Clinician notes for ${esc(regionName(reg))}</h3></div><textarea id="rg_notes_${reg.id}" data-rg="notes" rows="3">${esc(reg.notes)}</textarea></section>` : ''}
-      ${S.part === 'O' ? `<div class="later"><div class="row between"><b class="small">Attachments & images</b><span class="badge">Later</span></div><span class="small muted">Photos, imaging and documents for this region will attach here.</span></div>` : ''}
-      ${S.part === 'P' && !plan.length ? `<div class="later"><span class="small muted">Treatment details (goals, exercises, modalities, frequency, home program) are planned for the whole visit in the Treatment step below, not inside each region.</span></div>` : ''}
-      <div class="row between">${S.part !== 'S' ? `<button class="btn" data-act="part" data-v="${PARTS[PARTS.findIndex(p => p[0] === S.part) - 1][0]}">← ${PARTS[PARTS.findIndex(p => p[0] === S.part) - 1][1]}</button>` : '<span></span>'}${S.part !== 'P' ? `<button class="btn" data-act="part" data-v="${PARTS[PARTS.findIndex(p => p[0] === S.part) + 1][0]}">${PARTS[PARTS.findIndex(p => p[0] === S.part) + 1][1]} →</button>` : ''}</div>
+      ${live.map(secHTML).join('') || (S.part === 'A' || S.quick ? '' : `<div class="empty">No fields in ${PARTS[pi][1]} for this area.</div>`)}
+      ${S.part === 'A' ? `<section class="card stack tight"><div class="sec-h"><h3>Clinician notes for ${esc(regionName(reg))}</h3></div><textarea id="rg_notes_${reg.id}" data-rg="notes" rows="3">${esc(reg.notes)}</textarea></section>` : ''}
+      <div class="row between">${pi > 0 ? `<button class="btn" data-act="part" data-v="${PARTS[pi - 1][0]}">‹ ${tr(PARTS[pi - 1][1])}</button>` : '<span></span>'}${pi < 3 ? `<button class="btn" data-act="part" data-v="${PARTS[pi + 1][0]}">${tr(PARTS[pi + 1][1])} ›</button>` : ''}</div>
     </div>
     <aside class="card rail stack" id="rail">${railHTML(reg, ev, tpl)}</aside>
   </div>`;
-}
-function autoFindingsHTML(reg, ev, tpl) {
+}function autoFindingsHTML(reg, ev, tpl) {
   return `<section class="card stack"><div class="sec-h"><h3>From the rules</h3><span class="small muted">Updates as you answer</span></div>
     ${ev.warnings.map(w => `<div class="alert warn"><span aria-hidden="true">⚠</span><span>${esc(w)}</span></div>`).join('')}
     <div class="stack" style="gap:6px"><span class="fh">Clinical findings</span>${ev.findings.length ? ev.findings.map(f => `<div class="finding">${esc(f)}</div>`).join('') : `<span class="small muted">None yet.</span>`}</div>
@@ -872,13 +916,13 @@ function qHTML(it, reg, ev, appear, uses) {
   let input = '';
   if (['yesno','choice','test'].includes(it.type)) {
     const tone = o => it.type === 'test' ? (/^pos/i.test(o) ? 'pos' : /^neg/i.test(o) ? 'neg' : 'eq') : '';
-    input = `<div class="chips" role="radiogroup">${optionsOf(it).map(o => `<button class="chip ${tone(o)} ${v === o ? 'on' : ''}" data-act="ans" data-id="${it.id}" data-v="${esc(o)}" aria-pressed="${v === o}">${esc(o)}</button>`).join('')}</div>`;
+    input = `<div class="chips" role="radiogroup">${optionsOf(it).map(o => `<button class="chip ${tone(o)} ${v === o ? 'on' : ''}" data-act="ans" data-id="${it.id}" data-v="${esc(o)}" aria-pressed="${v === o}">${esc(tO(it, o))}</button>`).join('')}</div>`;
   } else if (it.type === 'checklist') {
     const arr = Array.isArray(v) ? v : [];
-    input = `<div class="chips">${optionsOf(it).map(o => `<button class="chip ${arr.includes(o) ? 'on' : ''}" data-act="ansm" data-id="${it.id}" data-v="${esc(o)}" aria-pressed="${arr.includes(o)}">${arr.includes(o) ? '✓ ' : ''}${esc(o)}</button>`).join('')}</div>`;
+    input = `<div class="chips">${optionsOf(it).map(o => `<button class="chip ${arr.includes(o) ? 'on' : ''}" data-act="ansm" data-id="${it.id}" data-v="${esc(o)}" aria-pressed="${arr.includes(o)}">${arr.includes(o) ? '✓ ' : ''}${esc(tO(it, o))}</button>`).join('')}</div>`;
   } else if (it.type === 'scale') {
     const col = n => n <= 3 ? 'var(--good)' : n <= 6 ? 'var(--warn)' : 'var(--bad)';
-    input = `<div class="nprs">${Array.from({length:11}, (_, n) => `<button data-act="ans" data-id="${it.id}" data-v="${n}" class="${String(v) === String(n) ? 'on' : ''}" style="${String(v) === String(n) ? `background:${col(n)}` : `border-bottom:3px solid ${col(n)}`}" aria-label="${n}">${n}</button>`).join('')}</div><div class="nprs-l"><span>No pain</span><span>Worst imaginable</span></div>`;
+    input = `<div class="nprs">${Array.from({length:11}, (_, n) => `<button data-act="ans" data-id="${it.id}" data-v="${n}" class="${String(v) === String(n) ? 'on' : ''}" style="${String(v) === String(n) ? `background:${col(n)}` : `border-bottom:3px solid ${col(n)}`}" aria-label="${n}">${n}</button>`).join('')}</div><div class="nprs-l"><span>${tr('No pain')}</span><span>${tr('Worst imaginable')}</span></div>`;
   } else if (it.type === 'number' || it.type === 'measurement') {
     const nrm = parseFloat(it.normal), val = parseFloat(v), pct = !isNaN(nrm) && nrm > 0 && !isNaN(val) ? Math.max(0, Math.min(100, val / nrm * 100)) : null;
     input = `<div class="num"><input type="number" inputmode="decimal" id="${ida}" data-ans="${it.id}" value="${esc(v ?? '')}">${it.unit ? `<span>${esc(it.unit)}</span>` : ''}
@@ -889,23 +933,23 @@ function qHTML(it, reg, ev, appear, uses) {
     input = `<textarea id="${ida}" data-ans="${it.id}" rows="2">${esc(v ?? '')}</textarea>`;
   }
   return `<div class="q ${appear ? 'appear' : ''} ${['text','checklist','scale','short'].includes(it.type) ? 'wide' : ''}">
-    <div class="q-h"><div class="q-l">${esc(it.label)}${req ? ` <span class="star" title="Required">*</span>` : ''}${it.unit && it.type === 'choice' ? ` <span class="muted small">(${esc(it.unit)})</span>` : ''}</div>
+    <div class="q-h"><div class="q-l">${esc(tL(it))}${req ? ` <span class="star" title="Required">*</span>` : ''}${it.unit && it.type === 'choice' ? ` <span class="muted small">(${esc(it.unit)})</span>` : ''}</div>
       <div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}</div></div>
-    ${it.help ? `<div class="help">${esc(it.help)}</div>` : ''}${input}${uses?.[it.id] ? `<div class="uses">Helps decide: ${esc(uses[it.id])}</div>` : ''}</div>`;
+    ${tH(it) ? `<div class="help">${esc(tH(it))}</div>` : ''}${input}${uses?.[it.id] ? `<div class="uses">${tr('Helps decide')}: ${esc(uses[it.id])}</div>` : ''}</div>`;
 }
 
 /* ----- report ----- */
 function valText(it, v) {
-  if (Array.isArray(v)) return v.join(', ');
+  if (Array.isArray(v)) return v.map(o => tO(it, o)).join(', ');
   if (['measurement','number','scale'].includes(it.type) || (it.type === 'choice' && it.unit)) return `${v}${it.unit ? (it.unit === '°' ? '°' : ' ' + it.unit) : ''}${it.type === 'measurement' && it.normal !== '' && it.normal != null ? ` (normal ${it.normal}${it.unit})` : ''}`;
-  return String(v);
+  return tO(it, String(v));
 }
 function regionReport(reg, n) {
   const tpl = tplById(reg.templateId), ev = evaluate(tpl, reg), ans = reg.answers || {};
   const part = k => {
     const its = ev.items.filter(i => i.part === k && answered(i.id, reg));
     const secs = [...(tpl.sections[k] || [])]; its.forEach(i => !secs.includes(i.section) && secs.push(i.section));
-    const body = secs.map(s => { const x = its.filter(i => i.section === s); return x.length ? `<h4>${esc(s)}</h4><table>${x.map(i => { const val = ans[i.id], cls = i.type === 'test' ? (/^pos/i.test(val) ? 'pos' : /^neg/i.test(val) ? 'neg' : '') : ''; return `<tr><th>${esc(i.label)}</th><td class="${cls}">${esc(valText(i, val)).replace(/\n/g, '<br>')}</td></tr>`; }).join('')}</table>` : ''; }).join('');
+    const body = secs.map(s => { const x = its.filter(i => i.section === s); return x.length ? `<h4 dir="auto">${esc(tSec(tpl, s))}</h4><table>${x.map(i => { const val = ans[i.id], cls = i.type === 'test' ? (/^pos/i.test(val) ? 'pos' : /^neg/i.test(val) ? 'neg' : '') : ''; return `<tr><th dir="auto">${esc(tL(i))}</th><td dir="auto" class="${cls}">${esc(valText(i, val)).replace(/\n/g, '<br>')}</td></tr>`; }).join('')}</table>` : ''; }).join('');
     return body;
   };
   const chosen = tpl.diagnoses.filter(d => reg.confirmed?.[d.id]), plan = planFor(reg, ev, tpl);
@@ -978,12 +1022,12 @@ function bFields(tpl, ti) {
   const idxs = tpl.items.map((it, i) => [it, i]).filter(([it]) => it.part === part);
   const orphans = idxs.filter(([it]) => !secs.includes(it.section));
   const itemRow = ([it, i], list, k) => { const open = S.open === it.id; return `<div class="li ${open ? 'open' : ''}"><div class="li-h">${mvBtns(`data-k="item" data-i="${i}"`, k > 0, k < list.length - 1)}
-      <div class="t"><b>${esc(it.label || 'Untitled')}</b><div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : `<span class="badge">${TYPES[it.type]}</span>`}${it.areas?.length ? `<span class="badge">${esc(it.areas.join(', '))}</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}${it.required ? `<span class="badge req">Required</span>` : ''}</div></div>
+      <div class="t"><b>${esc(it.label || 'Untitled')}</b><div class="row" style="gap:4px">${it.type === 'test' ? `<span class="badge test">TEST</span>` : `<span class="badge">${TYPES[it.type]}</span>`}${it.areas?.length ? `<span class="badge">${esc(it.areas.join(', '))}</span>` : ''}${ev.conditional.has(it.id) ? `<span class="badge cond">Conditional</span>` : ''}${it.required ? `<span class="badge req">Required</span>` : ''}${it.quick ? `<span class="badge good">Quick</span>` : ''}</div></div>
       <button class="btn sm" data-act="toggle" data-id="${it.id}">${open ? 'Close' : 'Edit'}</button></div>${open ? itemEditor(tpl, ti, it, i) : ''}</div>`; };
   return `<div class="stack">
     <div class="soap" style="max-width:560px">${PARTS.map(([k, l]) => `<button class="${part === k ? 'on' : ''}" style="--pc:${PART_COLOR[k]}" data-act="bpart" data-v="${k}"><i>${k}</i>${l}<small class="muted">${tpl.items.filter(i => i.part === k).length} fields</small></button>`).join('')}</div>
     ${secs.map((sec, si) => { const its = idxs.filter(([it]) => it.section === sec); return `<div class="sec-block">
-      <div class="sec-title">${mvBtns(`data-k="sec" data-i="${si}"`, si > 0, si < secs.length - 1)}<input type="text" id="${P}.sections.${part}.${si}" data-b="${P}.sections.${part}.${si}" data-rename="${esc(sec)}" value="${esc(sec)}" aria-label="Section name"><span class="small muted" style="flex:1">${its.length} fields</span>${delBtn('sec' + part + si, 'delSec', `data-i="${si}"`)}</div>
+      <div class="sec-title">${mvBtns(`data-k="sec" data-i="${si}"`, si > 0, si < secs.length - 1)}<input type="text" id="${P}.sections.${part}.${si}" data-b="${P}.sections.${part}.${si}" data-rename="${esc(sec)}" value="${esc(sec)}" aria-label="Section name"><input type="text" dir="rtl" id="${P}.secAr.${part}.${si}" data-b="${P}.secAr.${esc(sec)}" value="${esc(tpl.secAr?.[sec] || '')}" placeholder="الاسم بالعربي" aria-label="Arabic section name" style="max-width:200px"><span class="small muted" style="flex:1">${its.length} fields</span>${delBtn('sec' + part + si, 'delSec', `data-i="${si}"`)}</div>
       <div class="list">${its.map((x, k) => itemRow(x, its, k)).join('') || `<span class="small muted">No fields in this section.</span>`}</div>
       <div class="addbar">${Object.entries(TYPES).map(([k, l]) => `<button class="btn sm ghost" data-act="addItem" data-t="${k}" data-sec="${esc(sec)}">+ ${l}</button>`).join('')}</div></div>`; }).join('')}
     ${orphans.length ? `<div class="sec-block"><b class="small">Fields without a section</b><div class="list">${orphans.map((x, k) => itemRow(x, orphans, k)).join('')}</div></div>` : ''}
@@ -1004,8 +1048,12 @@ function itemEditor(tpl, ti, it, i) {
     </div>
     ${['choice','checklist','test'].includes(it.type) ? `<label class="f"><span>Options (one per line)</span><textarea id="${p}.options" data-b="${p}.options" data-t="lines" rows="4">${esc((it.options || []).join('\n'))}</textarea></label>` : ''}
     <label class="f"><span>${it.type === 'test' ? 'How to perform' : 'Hint'}</span><textarea id="${p}.help" data-b="${p}.help" rows="2">${esc(it.help)}</textarea></label>
+    <div class="grid2"><label class="f"><span>Arabic label</span><input type="text" dir="rtl" id="${p}.ar.label" data-b="${p}.ar.label" value="${esc(it.ar?.label || '')}"></label>
+      <label class="f"><span>Arabic hint</span><input type="text" dir="rtl" id="${p}.ar.help" data-b="${p}.ar.help" value="${esc(it.ar?.help || '')}"></label></div>
+    ${['choice','checklist','test'].includes(it.type) ? `<label class="f"><span>Arabic options (one per line, same order as above)</span><textarea dir="rtl" id="${p}.ar.options" data-b="${p}.ar.options" data-t="lines" rows="4">${esc((it.ar?.options || []).join('\n'))}</textarea></label>` : ''}
     <div class="stack" style="gap:6px"><span class="small muted" style="font-weight:600">Only for these body areas (none = all)</span><div class="chips">${S.cfg.bodyAreas.map(a => `<button class="chip sm ${it.areas?.includes(a.name) ? 'on' : ''}" data-act="itemArea" data-i="${i}" data-v="${esc(a.name)}">${esc(a.name)}</button>`).join('')}</div></div>
     <label class="check"><input type="checkbox" id="${p}.required" data-b="${p}.required" data-t="bool" ${it.required ? 'checked' : ''}> Required</label>
+    <label class="check"><input type="checkbox" id="${p}.quick" data-b="${p}.quick" data-t="bool" ${it.quick ? 'checked' : ''}> Show in Quick assessment</label>
     ${usedIn.length ? `<div class="small muted">Used in rules: ${usedIn.map(r => esc(r.name)).join(', ')}</div>` : ''}
     <div class="row"><button class="btn sm" data-act="ruleFor" data-id="${it.id}">+ Rule that shows this</button><button class="btn sm" data-act="dupItem" data-i="${i}">Duplicate</button>${delBtn('it' + it.id, 'delItem', `data-i="${i}"`)}</div>
   </div>`;
@@ -1099,7 +1147,7 @@ function viewSettings() {
 
 /* ================= events ================= */
 function getPath(o, path) { return path.split('.').reduce((a, k) => a?.[k], o); }
-function setPath(o, path, v) { const ks = path.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; }
+function setPath(o, path, v) { const ks = path.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k] ??= {}, o)[last] = v; }
 let toastT; function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2600); }
 let armT; function arm(key, fn) { if (S.arm === key) { S.arm = null; fn(); } else { S.arm = key; clearTimeout(armT); armT = setTimeout(() => { S.arm = null; render(); }, 3500); } render(); }
 const TPL = () => S.cfg.templates.find(t => t.id === S.tplId);
@@ -1121,6 +1169,9 @@ document.addEventListener('click', async e => {
   switch (a) {
     case 'signIn': try { await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); } catch { toast('Sign-in didn’t complete, try again'); } break;
     case 'signOut': await firebase.auth().signOut(); break;
+    case 'lang': S.lang = AR() ? 'en' : 'ar'; LS.set('pf3_lang', S.lang); render(); break;
+    case 'mode': S.quick = !!d.v; LS.set('pf3_quick', S.quick); S.prevVisible = new Set(); render(); break;
+    case 'sec': S.sec = d.v; S.prevVisible = new Set(); render(); $('.sec.open')?.scrollIntoView({block:'nearest'}); break;
     case 'importLocal': { const ps = LS.get('pf3_patients', []), vs = LS.get('pf3_visits', []);
       try { for (const p of ps) await writeDoc('patients', p); for (const v of vs) await writeDoc('visits', v); LS.set('pf3_patients', []); LS.set('pf3_visits', []); toast('Patients moved to your account'); render(); } catch (err) { toast(failMsg(err)); } break; }
     case 'subAdd': { const u = S.users.find(x => x.uid === d.id), s = S.subs[d.id], e = new Date(s?.active && s.expires > Date.now() ? s.expires : Date.now()); e.setMonth(e.getMonth() + +d.v);
@@ -1198,7 +1249,7 @@ document.addEventListener('click', async e => {
     case 'addEv': tpl.diagnoses[+d.i].evidence.push({item:'', op:'eq', value:'', w:2}); touch(); render(); break;
     case 'delEv': tpl.diagnoses[+d.i].evidence.splice(+d.e, 1); touch(); render(); break;
     case 'allNeg': { const r = curRegion(), ev = evaluate(tplById(r.templateId), r);
-      ev.items.filter(i => i.type === 'test' && i.part === S.part && i.section === d.sec && !answered(i.id, r)).forEach(i => { const n = optionsOf(i).find(o => /^neg/i.test(o)); if (n) r.answers[i.id] = n; });
+      ev.items.filter(i => i.type === 'test' && i.part === S.part && i.section === d.sec && !answered(i.id, r) && (!S.quick || i.quick || ev.required.has(i.id))).forEach(i => { const n = optionsOf(i).find(o => /^neg/i.test(o)); if (n) r.answers[i.id] = n; });
       saveVisit(); render(); break; }
     case 'delDx': arm('dx' + tpl.diagnoses[+d.i].id, () => { tpl.diagnoses.splice(+d.i, 1); touch(); }); break;
     case 'ruleForDx': { const dx = tpl.diagnoses.find(x => x.id === d.id); addRuleAndGo(newRule('Criteria: ' + dx.name, [{item:'', op:'eq', value:''}], [{type:'diagnosis', target:dx.id}])); break; }
