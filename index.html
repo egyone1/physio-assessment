@@ -448,7 +448,7 @@ function validate(tpl) {
       if (['warning','finding','treatment'].includes(a.type) && !a.text?.trim()) w.push(`“${n}” has an empty ${a.type} message.`);
     });
   });
-  tpl.diagnoses.forEach(d => !tpl.rules.some(r => r.actions?.some(a => a.type === 'diagnosis' && a.target === d.id)) && w.push(`Diagnosis “${d.name}” has no criteria (no rule suggests it).`));
+  tpl.diagnoses.forEach(d => !d.evidence?.length && !tpl.rules.some(r => r.actions?.some(a => a.type === 'diagnosis' && a.target === d.id)) && w.push(`Diagnosis “${d.name}” has no evidence and no criteria rule, so it can never be suggested.`));
   const shown = new Set(); tpl.rules.forEach(r => r.actions.forEach(a => a.type === 'show' && shown.add(a.target)));
   tpl.items.forEach(i => { if (!tpl.sections[i.part]?.includes(i.section)) w.push(`“${i.label}” is in a section that no longer exists.`); });
   return [...new Set(w)];
